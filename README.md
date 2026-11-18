@@ -40,6 +40,8 @@ The tasks are 50 extract (list the authorities a section cites), 50 cite (fill a
 | Base + law pack (from MMLU law) | .39 | 1.00 / .78 | .68 | 7.7 / 8.5 GB | 1.7 / 5.9 s | 5.0 tok/s | 30 s |
 | **Base + regulation pack** (non-test CFR titles) | .57 | 1.00 / **.98** | .73 | 7.7 / 8.5 GB | 1.7 / 6.0 s | 5.1 tok/s | 30 s |
 | Base + regulation and math, shared budget | .55 | 1.00 / .98 | .73 | 7.7 / 8.5 GB | 1.6 / 5.8 s | 5.1 tok/s | 27 s |
+| Base + reconcile pack (version-comparison prompts) | .55 | 1.00 / 1.00 | .82 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 26 s |
+| Base + regulation and reconcile, shared budget | .46 | 1.00 / 1.00 | .86 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 27 s |
 | One trimmed model for all five domains | .51 | .98 / .92 | .91 | 7.7 / 8.5 GB | 1.6 / 5.6 s | 5.4 tok/s | 27 s |
 | Per-prompt plan (router picks the 51) | .56 | 1.00 / .98 | .73 | 7.7 / 8.4 GB | 3.6 / 7.5 s | 5.5 tok/s | 26 s |
 | **Expert offloading** (all 128 reachable from RAM, 51 cached) | **.77** | 1.00 / .98 | **1.00** | 7.7 / 8.5 GB | 3.1 / 11.2 s | 5.4 tok/s | 57 s |
@@ -51,6 +53,7 @@ Paired comparisons on the same tasks (bootstrap 95% intervals), against the regu
 - **Adding a second domain cost nothing measurable.** Regulation plus math in the same 51 slots is within noise of regulation alone on all three task types.
 - **The 12B wins reconcile** (+27 points, 6 wins and 0 losses). All six pack failures have the same shape: the version printed first governs, and the pack chooses the second one. Configurations that keep more general experts (the trimmed model, offloading, 11 GB) do not show this.
 - **Offloading has the best quality at 8 GB.** It is 21 points ahead on extract and 27 on reconcile, and at least as good as the 11 GB model. The cost is the prompt: it copies about 0.85 GB from RAM per prompt token (a third of expert lookups miss the GPU cache), first token takes roughly twice as long, and a 32k prompt takes 57 s instead of 30 s. Decoding speed is unaffected.
+- **A reconcile-aware pack narrowed the gap but did not close it.** It was profiled on 1,600 synthetic version-comparison prompts from the non-test titles, each with a worked answer (`scripts/build_reconcile_prompts.py`); the prompts reuse the test's question wording but none of its regulations. Alone it raised reconcile from .73 to .82 at no cost elsewhere; mixed with the regulation pack it reached .86 but lost 11 points on extract. Neither reconcile gain is outside noise (5 wins, 2–3 losses), and every remaining failure is still the same "second version" mistake, so the bias is reduced, not removed. Offloading and the 12B stay at 1.00.
 - **Picking experts per prompt did not help.** One base-only router pass (0.5 s) plus a swap (1.5 s, about 190 experts changed) scored the same as the fixed regulation pack.
 
 **Where this leaves the claim.** At 8 GB the packs are 1.6× faster than the 12B at decoding and fit under the limit, which the 12B does not quite. On quality they match the 12B on extract, beat it on citations and lose on reconcile. The decisive alternative turned out to be offloading the full 26B: same memory, equal or better quality on every task type, and only the time to first token is worse. A pack system only wins where first-token latency on long prompts matters more than reconcile-type reasoning.
@@ -86,7 +89,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Score the 26B from packs on MMLU | `scripts/eval_quant.py --quant-dense --quant-embed` |
 | Score the dense baselines | `scripts/eval_dense_quant.py --quant-embed` |
 | Build the eCFR policy tasks | `scripts/build_policy_tasks.py` |
-| Profile the regulation pack | `scripts/build_reg_prompts.py`, then `scripts/profile_domain.py` |
+| Profile the regulation and reconcile packs | `scripts/build_reg_prompts.py`, `scripts/build_reconcile_prompts.py`, then `scripts/profile_domain.py` |
 | Run the policy tasks | `scripts/eval_policy.py --config ...` |
 | The 8 GB comparison | `scripts/run_8gb_comparison.ps1` (`edge_moe/expert_store.py` holds all configurations) |
 
