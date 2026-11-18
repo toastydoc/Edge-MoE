@@ -1,0 +1,1151 @@
+{
+ "summary": {
+  "config": "26b_base_law",
+  "load_s": 12.539031982421875,
+  "cold_first_answer_s": 33.62037777900696,
+  "warm_ttft_s": {
+   "2k": 1.7750959396362305,
+   "8k": 6.464186191558838,
+   "versions": 2.3887698650360107
+  },
+  "warm_total_s": {
+   "2k": 7.123147487640381,
+   "8k": 14.980568528175354,
+   "versions": 8.166834354400635
+  },
+  "decode_tok_s": 5.352857670631231,
+  "peak_gb": {
+   "2k": 8.890392064,
+   "8k": 9.015864832,
+   "versions": 8.965124096
+  },
+  "probe": {
+   "16384": {
+    "peak_gb": 9.30107648,
+    "seconds": 15.160512924194336
+   },
+   "32768": {
+    "peak_gb": 10.241256448,
+    "seconds": 103.23257899284363
+   }
+  },
+  "extract_f1": 0.5067424534529797,
+  "cite_value": 1.0,
+  "cite_gold_cited": 0.7916666666666666,
+  "cite_outside": 0.041666666666666664,
+  "reconcile_value": 0.7333333333333333,
+  "reconcile_label": 0.8
+ },
+ "rows": [
+  {
+   "id": "extract-0",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 2283,
+   "output_tokens": 94,
+   "ttft_s": 4.319294214248657,
+   "total_s": 21.081345796585083,
+   "decode_tok_s": 5.548246856488729,
+   "peak_gb": 8.890392064,
+   "output": "34 CFR 682.200\n34 CFR 685.102\n\u00a7 668.187(a,1)\n\u00a7 668.187(a,2)\n\u00a7 668.183(d,2)\n\u00a7 668.183(d,1)\n\u00a7 668.195",
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571,
+   "pred": [
+    "sec:668.183",
+    "sec:668.187",
+    "sec:682.200",
+    "sec:685.102"
+   ]
+  },
+  {
+   "id": "cite-0",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1876,
+   "output_tokens": 24,
+   "ttft_s": 1.7530100345611572,
+   "total_s": 6.15220832824707,
+   "decode_tok_s": 5.22822534119716,
+   "peak_gb": 8.851915264,
+   "output": "The value is $1 million. \n\n\u00a7 200.449(c)(7)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.449"
+   ]
+  },
+  {
+   "id": "reconcile-0",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1744,
+   "output_tokens": 19,
+   "ttft_s": 1.8249390125274658,
+   "total_s": 5.258437395095825,
+   "decode_tok_s": 5.242466427648486,
+   "peak_gb": 8.822167552,
+   "output": "The value is $62,689 and Guidance B governs on that date.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-1",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6479,
+   "output_tokens": 160,
+   "ttft_s": 5.969018459320068,
+   "total_s": 38.01173162460327,
+   "decode_tok_s": 4.962126620796554,
+   "peak_gb": 8.974298624,
+   "output": "\u00a7 180.300\n\u00a7 200.1\n\u00a7 200.208\n\u00a7 200.521\n\u00a7 200.513(a)4(viii)\n\u00a7 200.425\n\u00a7 200.414\n\u00a7 200.415\n\u00a7 200.405(d)\n\u00a7 200.300\n\u00a7 200.300\n\u00a7 200.300\n\u00a7 200.300\n\u00a7 200.300\n\u00a7 200.300\n\u00a7 ",
+   "precision": 0.8,
+   "recall": 0.8888888888888888,
+   "f1": 0.8421052631578948,
+   "pred": [
+    "sec:180.300",
+    "sec:200.1",
+    "sec:200.208",
+    "sec:200.300",
+    "sec:200.405",
+    "sec:200.414",
+    "sec:200.415",
+    "sec:200.425",
+    "sec:200.513",
+    "sec:200.521"
+   ]
+  },
+  {
+   "id": "cite-1",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7475,
+   "output_tokens": 21,
+   "ttft_s": 8.472584247589111,
+   "total_s": 14.167183876037598,
+   "decode_tok_s": 3.5120994108323416,
+   "peak_gb": 8.995672576,
+   "output": "The value is $10. (\u00a7 273.25(b)(1).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:273.25"
+   ]
+  },
+  {
+   "id": "reconcile-1",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1745,
+   "output_tokens": 19,
+   "ttft_s": 2.3314316272735596,
+   "total_s": 8.26183795928955,
+   "decode_tok_s": 3.035205176890645,
+   "peak_gb": 8.822395392,
+   "output": "The value is $67,544 and Guidance B governs on that date.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-2",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1584,
+   "output_tokens": 126,
+   "ttft_s": 2.5606939792633057,
+   "total_s": 26.83398699760437,
+   "decode_tok_s": 5.149692705705367,
+   "peak_gb": 8.787733504,
+   "output": "\u00a7 273.27 (a) (No legal authority cited)\n\u00a7 273.27 (a) (No legal authority cited)\n\u00a7 273.27 (b) (No legal authority cited)\n\u00a7 273.27 (c) (No legal authority cited)\n\u00a7 273.27 (d) (No legal authority cited)\n\u00a7 273.27 (e) (No legal authority cited)\n\u00a7 273.27 (f) (No legal authority cited)",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "cite-2",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1774,
+   "output_tokens": 22,
+   "ttft_s": 1.664872169494629,
+   "total_s": 5.3640570640563965,
+   "decode_tok_s": 5.676926295539443,
+   "peak_gb": 8.828374528,
+   "output": "The value is 90 calendar days. (\u00a7 200.344(b).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.344"
+   ]
+  },
+  {
+   "id": "reconcile-2",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1744,
+   "output_tokens": 16,
+   "ttft_s": 1.7010345458984375,
+   "total_s": 4.360876083374023,
+   "decode_tok_s": 5.639433698834655,
+   "peak_gb": 8.82216704,
+   "output": "The value is $58,328 and Guidance A governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-3",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6436,
+   "output_tokens": 73,
+   "ttft_s": 5.509764671325684,
+   "total_s": 18.591740131378174,
+   "decode_tok_s": 5.503755928900902,
+   "peak_gb": 8.9742976,
+   "output": "- GAGAS\n- \u00a7 200.510(a) and (b)\n- \u00a7 200.511(b)\n- \u00a7 200.511(c)\n- \u00a7 200.516\n- \u00a7 200.517",
+   "precision": 0.5,
+   "recall": 0.6666666666666666,
+   "f1": 0.5714285714285715,
+   "pred": [
+    "sec:200.510",
+    "sec:200.511",
+    "sec:200.516",
+    "sec:200.517"
+   ]
+  },
+  {
+   "id": "cite-3",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7923,
+   "output_tokens": 30,
+   "ttft_s": 6.587112665176392,
+   "total_s": 11.83070993423462,
+   "decode_tok_s": 5.530554409875289,
+   "peak_gb": 8.99567872,
+   "output": "The value that fills the blank is 1 year.\n\n**Source:** \u00a7 668.194(c)(2)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.194"
+   ]
+  },
+  {
+   "id": "reconcile-3",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 6085,
+   "output_tokens": 32,
+   "ttft_s": 4.966423511505127,
+   "total_s": 10.531207799911499,
+   "decode_tok_s": 5.570746033154449,
+   "peak_gb": 8.965124096,
+   "output": "As of 2022-02-17, the value is **$178** and **Guidance A** governs.",
+   "value_correct": 0.0,
+   "label_correct": 0.0
+  },
+  {
+   "id": "extract-4",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1859,
+   "output_tokens": 160,
+   "ttft_s": 1.7042734622955322,
+   "total_s": 30.950324773788452,
+   "decode_tok_s": 5.436631369702796,
+   "peak_gb": 8.8532608,
+   "output": "\u00a7 200.449 (a) (1)\n\u00a7 200.449 (b) (1)\n\u00a7 200.449 (b) (2)\n\u00a7 200.449 (c) (2)\n\u00a7 200.449 (c) (7)\n\u00a7 200.449 (d) (e)\n\u00a7 200.449 (g)\n\u00a7 200.449 (g) (1)\n\u00a7 200.449 (g) (2)\n\u00a7 200.449 (g) (3)\n\u00a7 2",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "cite-4",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 2134,
+   "output_tokens": 44,
+   "ttft_s": 2.4459176063537598,
+   "total_s": 10.60709547996521,
+   "decode_tok_s": 5.268847299485683,
+   "peak_gb": 8.889722368,
+   "output": "The value that fills the blank is 8 percent. This is based on the criteria for a program passing the D/E rates under \u00a7 668.402(c)5(ii).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.402"
+   ]
+  },
+  {
+   "id": "reconcile-4",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 2286,
+   "output_tokens": 31,
+   "ttft_s": 2.527229070663452,
+   "total_s": 8.166834354400635,
+   "decode_tok_s": 5.319521223676841,
+   "peak_gb": 8.889725952,
+   "output": "As of 2018-10-29, the value is **$38** and **Guidance A** governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-5",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 4195,
+   "output_tokens": 160,
+   "ttft_s": 4.212236404418945,
+   "total_s": 37.45451068878174,
+   "decode_tok_s": 4.783066243899979,
+   "peak_gb": 8.93136896,
+   "output": "\u00a7 273.10(f)\n\u00a7 273.7(a)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)(4)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.",
+   "precision": 1.0,
+   "recall": 0.75,
+   "f1": 0.8571428571428571,
+   "pred": [
+    "sec:273.10",
+    "sec:273.2",
+    "sec:273.7"
+   ]
+  },
+  {
+   "id": "cite-5",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7496,
+   "output_tokens": 20,
+   "ttft_s": 6.699770927429199,
+   "total_s": 10.313094139099121,
+   "decode_tok_s": 5.258317312615668,
+   "peak_gb": 8.99565568,
+   "output": "The value is 20.\n\n\u00a7 273.24(7)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:273.24"
+   ]
+  },
+  {
+   "id": "reconcile-5",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1540,
+   "output_tokens": 20,
+   "ttft_s": 1.7555484771728516,
+   "total_s": 5.240750312805176,
+   "decode_tok_s": 5.451621138766217,
+   "peak_gb": 8.777934848,
+   "output": "The value is $161,323 and Guidance B governs on that date.",
+   "value_correct": 0.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-6",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1773,
+   "output_tokens": 28,
+   "ttft_s": 1.752079963684082,
+   "total_s": 6.673471927642822,
+   "decode_tok_s": 5.486252710154253,
+   "peak_gb": 8.828235776,
+   "output": "\u00a7 200.402-200.411\n\u00a7 200.403",
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "pred": [
+    "sec:200.402",
+    "sec:200.403",
+    "sec:200.411"
+   ]
+  },
+  {
+   "id": "cite-6",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1706,
+   "output_tokens": 25,
+   "ttft_s": 1.7096118927001953,
+   "total_s": 6.179020166397095,
+   "decode_tok_s": 5.36983836120844,
+   "peak_gb": 8.812364288,
+   "output": "The value is 180 calendar days. \u00a7 200.518(c)(2).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.518"
+   ]
+  },
+  {
+   "id": "reconcile-6",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 6085,
+   "output_tokens": 32,
+   "ttft_s": 5.528203010559082,
+   "total_s": 14.8939049243927,
+   "decode_tok_s": 3.3099494608312723,
+   "peak_gb": 8.965074432,
+   "output": "As of 2024-01-13, the value is **$204** and **Guidance B** governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-7",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6721,
+   "output_tokens": 36,
+   "ttft_s": 6.080263137817383,
+   "total_s": 12.891596794128418,
+   "decode_tok_s": 5.138494422097614,
+   "peak_gb": 8.974337536,
+   "output": "\u00a7 200.434:\n*   26 U.S.C. 127\n*   200.306",
+   "precision": 0.5,
+   "recall": 0.3333333333333333,
+   "f1": 0.4,
+   "pred": [
+    "sec:200.306",
+    "usc:26:127"
+   ]
+  },
+  {
+   "id": "cite-7",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7673,
+   "output_tokens": 21,
+   "ttft_s": 6.940106391906738,
+   "total_s": 10.759918689727783,
+   "decode_tok_s": 5.235859367071178,
+   "peak_gb": 8.995676672,
+   "output": "The value is 25. \u00a7 668.16(m)(1).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.16"
+   ]
+  },
+  {
+   "id": "reconcile-7",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 6085,
+   "output_tokens": 52,
+   "ttft_s": 5.247695207595825,
+   "total_s": 14.699352741241455,
+   "decode_tok_s": 5.395878957574611,
+   "peak_gb": 8.965122048,
+   "output": "As of 2019-02-22, the value is **$169** and **Guidance B** governs (as Guidance A does not take effect until 2019-01-23).",
+   "value_correct": 0.0,
+   "label_correct": 0.0
+  },
+  {
+   "id": "extract-8",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1830,
+   "output_tokens": 13,
+   "ttft_s": 1.7906386852264404,
+   "total_s": 3.973858594894409,
+   "decode_tok_s": 5.496468746396234,
+   "peak_gb": 8.843856384,
+   "output": "\u00a7 200.313 (d)",
+   "precision": 1.0,
+   "recall": 0.3333333333333333,
+   "f1": 0.5,
+   "pred": [
+    "sec:200.313"
+   ]
+  },
+  {
+   "id": "cite-8",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1845,
+   "output_tokens": 30,
+   "ttft_s": 1.8186864852905273,
+   "total_s": 7.123147487640381,
+   "decode_tok_s": 5.46709646600345,
+   "peak_gb": 8.847027712,
+   "output": "The value that fills the blank is 25 percent.\n\n\u00a7 668.185(c)(1)(ii)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.185"
+   ]
+  },
+  {
+   "id": "reconcile-8",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1539,
+   "output_tokens": 20,
+   "ttft_s": 1.7044227123260498,
+   "total_s": 5.178489446640015,
+   "decode_tok_s": 5.469094710338657,
+   "peak_gb": 8.777732096,
+   "output": "The value is $136,532 and Guidance A governs on that date.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-9",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6782,
+   "output_tokens": 63,
+   "ttft_s": 5.937534809112549,
+   "total_s": 17.691808700561523,
+   "decode_tok_s": 5.274677157651048,
+   "peak_gb": 8.974301184,
+   "output": "\u00a7 825.124\n\u00a7 825.126\n\u00a7 825.122(k)\n\u00a7 825.306\n\u00a7 825.307\n\u00a7 825.308",
+   "precision": 0.6666666666666666,
+   "recall": 0.5714285714285714,
+   "f1": 0.6153846153846153,
+   "pred": [
+    "sec:825.122",
+    "sec:825.124",
+    "sec:825.126",
+    "sec:825.306",
+    "sec:825.307",
+    "sec:825.308"
+   ]
+  },
+  {
+   "id": "cite-9",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 6339,
+   "output_tokens": 37,
+   "ttft_s": 5.83005690574646,
+   "total_s": 12.730402708053589,
+   "decode_tok_s": 5.217129841226712,
+   "peak_gb": 8.974337024,
+   "output": "The value that fills the blank is $50,000. \n\n**Source:** \u00a7 200.320(a(v(iv)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.320"
+   ]
+  },
+  {
+   "id": "reconcile-9",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1540,
+   "output_tokens": 20,
+   "ttft_s": 1.8023874759674072,
+   "total_s": 5.534245014190674,
+   "decode_tok_s": 5.0912983160246466,
+   "peak_gb": 8.777925632,
+   "output": "The value is $145,027 and Guidance B governs on that date.",
+   "value_correct": 0.0,
+   "label_correct": 0.0
+  },
+  {
+   "id": "extract-10",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 2021,
+   "output_tokens": 11,
+   "ttft_s": 1.8691966533660889,
+   "total_s": 3.71022367477417,
+   "decode_tok_s": 5.431750801979894,
+   "peak_gb": 8.8832512,
+   "output": "34 CFR 668.71",
+   "precision": 1.0,
+   "recall": 0.3333333333333333,
+   "f1": 0.5,
+   "pred": [
+    "sec:668.71"
+   ]
+  },
+  {
+   "id": "cite-10",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1956,
+   "output_tokens": 25,
+   "ttft_s": 1.7533886432647705,
+   "total_s": 6.242730617523193,
+   "decode_tok_s": 5.345995056205195,
+   "peak_gb": 8.870168576,
+   "output": "The value is 6 years. \u00a7 164.105(c)(1 eyes(2).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:164.105"
+   ]
+  },
+  {
+   "id": "reconcile-10",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1026,
+   "output_tokens": 29,
+   "ttft_s": 1.1720473766326904,
+   "total_s": 6.34150242805481,
+   "decode_tok_s": 5.416431658941921,
+   "peak_gb": 8.660619264,
+   "output": "As of 2022-10-22, Guidance B governs. The value is $5,000.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-11",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 7718,
+   "output_tokens": 12,
+   "ttft_s": 6.726086139678955,
+   "total_s": 8.766006469726562,
+   "decode_tok_s": 5.3923674557149415,
+   "peak_gb": 8.995632128,
+   "output": "34 CFR 685.102",
+   "precision": 1.0,
+   "recall": 0.2,
+   "f1": 0.33333333333333337,
+   "pred": [
+    "sec:685.102"
+   ]
+  },
+  {
+   "id": "cite-11",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7994,
+   "output_tokens": 61,
+   "ttft_s": 6.775727272033691,
+   "total_s": 18.513019800186157,
+   "decode_tok_s": 5.1119114443204925,
+   "peak_gb": 8.995689472,
+   "output": "The value is 20.\n\n**\u00a7 668.210(b)(2)** states: \"Within 20 days after receiving your request for replacement records or clarification of data, the data manager must\u2014 (i) Replace the missing or illegible records;...\"",
+   "value_correct": 1.0,
+   "gold_cited": 0.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.210"
+   ]
+  },
+  {
+   "id": "reconcile-11",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 4047,
+   "output_tokens": 47,
+   "ttft_s": 3.49061918258667,
+   "total_s": 15.84386134147644,
+   "decode_tok_s": 3.7237187944945283,
+   "peak_gb": 8.924568064,
+   "output": "As of 2020-12-12, the value is **$250,000** and **Guidance B** governs (as Guidance A expires when the next version takes effect).",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-12",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1364,
+   "output_tokens": 66,
+   "ttft_s": 2.2183144092559814,
+   "total_s": 15.57871413230896,
+   "decode_tok_s": 4.865123899537557,
+   "peak_gb": 8.733233664,
+   "output": "\u00a7 825.123(b) and (c)\n\u00a7 825.124\n\u00a7 825.203(b)\n\u00a7 825.305(d)\n\u00a7 825.207(a)",
+   "precision": 1.0,
+   "recall": 0.8333333333333334,
+   "f1": 0.9090909090909091,
+   "pred": [
+    "sec:825.123",
+    "sec:825.124",
+    "sec:825.203",
+    "sec:825.207",
+    "sec:825.305"
+   ]
+  },
+  {
+   "id": "cite-12",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1743,
+   "output_tokens": 23,
+   "ttft_s": 1.8945536613464355,
+   "total_s": 5.989531755447388,
+   "decode_tok_s": 5.37243411184354,
+   "peak_gb": 8.8218624,
+   "output": "The value is 180 calendar days. (\u00a7 200.504(e).",
+   "value_correct": 1.0,
+   "gold_cited": 0.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.504"
+   ]
+  },
+  {
+   "id": "reconcile-12",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 2277,
+   "output_tokens": 31,
+   "ttft_s": 2.571361541748047,
+   "total_s": 8.29730486869812,
+   "decode_tok_s": 5.239311374040357,
+   "peak_gb": 8.889722368,
+   "output": "As of 2022-01-31, the value is **$41** and **Guidance A** governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-13",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6779,
+   "output_tokens": 21,
+   "ttft_s": 6.011106967926025,
+   "total_s": 9.859045505523682,
+   "decode_tok_s": 5.197588216283307,
+   "peak_gb": 8.974307328,
+   "output": "- No legal authority is cited in the text of \u00a7 200.307.",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "cite-13",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7212,
+   "output_tokens": 29,
+   "ttft_s": 6.390645742416382,
+   "total_s": 11.415169954299927,
+   "decode_tok_s": 5.5726669470070345,
+   "peak_gb": 8.995670016,
+   "output": "The value that fills the blank is \"12 weeks\".\n\n**Source:** \u00a7 825.200(a)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:825.200"
+   ]
+  },
+  {
+   "id": "reconcile-13",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 2276,
+   "output_tokens": 31,
+   "ttft_s": 2.3887698650360107,
+   "total_s": 7.710918664932251,
+   "decode_tok_s": 5.636820977381331,
+   "peak_gb": 8.8897664,
+   "output": "As of 2019-12-27, the value is **$39** and **Guidance A** governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-14",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1567,
+   "output_tokens": 58,
+   "ttft_s": 1.7049634456634521,
+   "total_s": 15.671290874481201,
+   "decode_tok_s": 4.081244714511541,
+   "peak_gb": 8.783363584,
+   "output": "\u00a7 825.305(d)\n\u00a7 825.300(d)\n\u00a7 825.313(d)\n\u00a7 825.307(a)\nADA (as amended)",
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "pred": [
+    "sec:825.300",
+    "sec:825.305",
+    "sec:825.307",
+    "sec:825.313"
+   ]
+  },
+  {
+   "id": "cite-14",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1434,
+   "output_tokens": 27,
+   "ttft_s": 2.3554646968841553,
+   "total_s": 9.942628622055054,
+   "decode_tok_s": 3.426840418426093,
+   "peak_gb": 8.748286976,
+   "output": "The value that fills the blank is 10 percent. \n\n\u00a7 825.217(1)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:825.217"
+   ]
+  },
+  {
+   "id": "reconcile-14",
+   "type": "reconcile",
+   "bucket": "versions",
+   "input_tokens": 1932,
+   "output_tokens": 38,
+   "ttft_s": 2.7675065994262695,
+   "total_s": 9.63676905632019,
+   "decode_tok_s": 5.386313338903973,
+   "peak_gb": 8.866018816,
+   "output": "As of 2024-10-31, the value is **$1,000,000** and **Guidance B** governs.",
+   "value_correct": 1.0,
+   "label_correct": 1.0
+  },
+  {
+   "id": "extract-15",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 7310,
+   "output_tokens": 160,
+   "ttft_s": 6.59893012046814,
+   "total_s": 36.13820695877075,
+   "decode_tok_s": 5.382663931495774,
+   "peak_gb": 8.995633152,
+   "output": "\u00a7 825.209(f)\n\u00a7 825.215(d)(1)-(5)\n\u00a7 825.209(a)\n\u00a7 825.209(f)\n\u00a7 825.215(d)\n\u00a7 825.215(e)\n\u00a7 825.215(f)\n\u00a7 825.215(g)\n\u00a7 825.215(h)\n\u00a7 825.215(i)\n\u00a7 825.215(j)\n\u00a7 825.215(k)\n",
+   "precision": 1.0,
+   "recall": 0.3333333333333333,
+   "f1": 0.5,
+   "pred": [
+    "sec:825.209"
+   ]
+  },
+  {
+   "id": "extract-16",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 2162,
+   "output_tokens": 53,
+   "ttft_s": 2.3900861740112305,
+   "total_s": 12.22845458984375,
+   "decode_tok_s": 5.285429229944097,
+   "peak_gb": 8.889765888,
+   "output": "42 U.S.C. 601 et seq.\n\u00a7 272.2(d)(1)(xvi)(H)\n\u00a7 273.26(b)(1) through (b)6",
+   "precision": 0.5,
+   "recall": 0.08333333333333333,
+   "f1": 0.14285714285714285,
+   "pred": [
+    "sec:272.2",
+    "usc:42:601"
+   ]
+  },
+  {
+   "id": "extract-17",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6804,
+   "output_tokens": 91,
+   "ttft_s": 6.081195116043091,
+   "total_s": 24.8575496673584,
+   "decode_tok_s": 4.793262704644411,
+   "peak_gb": 8.974307328,
+   "output": "\u00a7 164.502(a)\n\u00a7 164.502(b)\n\u00a7 164.502(c)\n\u00a7 164.502(d)\n\u00a7 164.502(e)\n\u00a7 164.502(g)\n\u00a7 164.502(j)",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "extract-18",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1911,
+   "output_tokens": 29,
+   "ttft_s": 1.6980464458465576,
+   "total_s": 6.678422927856445,
+   "decode_tok_s": 5.622064938492417,
+   "peak_gb": 8.86078208,
+   "output": "\u00a7 200.310 through 200.316\n\u00a7 200.439",
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "pred": [
+    "sec:200.310",
+    "sec:200.316",
+    "sec:200.439"
+   ]
+  },
+  {
+   "id": "extract-19",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 7535,
+   "output_tokens": 22,
+   "ttft_s": 6.537726640701294,
+   "total_s": 10.321005582809448,
+   "decode_tok_s": 5.550740593369566,
+   "peak_gb": 8.995636224,
+   "output": "34 CFR 690.61\n34 CFR 690.79",
+   "precision": 0.5,
+   "recall": 0.25,
+   "f1": 0.3333333333333333,
+   "pred": [
+    "sec:690.61",
+    "sec:690.79"
+   ]
+  },
+  {
+   "id": "extract-20",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1229,
+   "output_tokens": 107,
+   "ttft_s": 1.6486811637878418,
+   "total_s": 21.884074926376343,
+   "decode_tok_s": 5.23834629776142,
+   "peak_gb": 8.70148608,
+   "output": "\u00a7 825.300(c)\n\u00a7 825.112 through 825.115\n\u00a7 825.210(f), 825.216(d), 825.220(d), 825.307(a) and 825.702(d)\nSection 7(o) of the Fair Labor Standards Act (FLSA)",
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "pred": [
+    "sec:825.112",
+    "sec:825.115",
+    "sec:825.210",
+    "sec:825.216",
+    "sec:825.220",
+    "sec:825.300",
+    "sec:825.307",
+    "sec:825.702"
+   ]
+  },
+  {
+   "id": "extract-21",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 7192,
+   "output_tokens": 38,
+   "ttft_s": 6.351221323013306,
+   "total_s": 14.479403018951416,
+   "decode_tok_s": 4.5520635960303375,
+   "peak_gb": 8.995625984,
+   "output": "There are no legal authorities (statutes, public laws, executive orders, or other CFR sections/parts) cited within the text of \u00a7 200.403.",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "extract-22",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1948,
+   "output_tokens": 37,
+   "ttft_s": 2.024933338165283,
+   "total_s": 8.520005941390991,
+   "decode_tok_s": 5.542663215515248,
+   "peak_gb": 8.868555264,
+   "output": "\u00a7 685.206\n\u00a7 685.222\n\u00a7 685, subpart D\nTitle IV of the HEA",
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8,
+   "pred": [
+    "sec:685.206",
+    "sec:685.222"
+   ]
+  },
+  {
+   "id": "extract-23",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 7426,
+   "output_tokens": 160,
+   "ttft_s": 6.566560745239258,
+   "total_s": 36.10490822792053,
+   "decode_tok_s": 5.38283328453712,
+   "peak_gb": 8.995635712,
+   "output": "34 CFR 600.20(g)(3)(iii)\n34 CFR 600.31\n34 CFR 600.20(h)(3)(i)\n34 CFR 600.32(d)\n34 CFR 600.31\n34 CFR 600.20(h(3)i)\n34 CFR 600.32(d)\n34 CFR 600.31\n34 CFR 600.20(h(3)i)\n34 CFR 600.32(d)\n34 CFR 600.31\n34",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": [
+    "sec:600.20",
+    "sec:600.31",
+    "sec:600.32"
+   ]
+  },
+  {
+   "id": "cite-15",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7651,
+   "output_tokens": 62,
+   "ttft_s": 6.560036659240723,
+   "total_s": 17.792450428009033,
+   "decode_tok_s": 5.430711622252583,
+   "peak_gb": 8.995683328,
+   "output": "The value is 45.\n\n\"**\u00a7 668.206(f)(4)(ii) states: \"We exclude from this estimate any amount attributable to funds that you delivered or disbursed more than 45 days after you submitted your completed appeal to us;\"**\"",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.206"
+   ]
+  },
+  {
+   "id": "cite-16",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1888,
+   "output_tokens": 30,
+   "ttft_s": 1.7349286079406738,
+   "total_s": 6.990044116973877,
+   "decode_tok_s": 5.518432458839559,
+   "peak_gb": 8.855092736,
+   "output": "The value that fills the blank is 30 days. This is supported by \u00a7 682.21(d)(1).",
+   "value_correct": 1.0,
+   "gold_cited": 0.0,
+   "cites_outside_excerpt": 1.0,
+   "cited": [
+    "sec:682.21"
+   ]
+  },
+  {
+   "id": "cite-17",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 8241,
+   "output_tokens": 31,
+   "ttft_s": 7.165436506271362,
+   "total_s": 12.791703224182129,
+   "decode_tok_s": 5.33213256749763,
+   "peak_gb": 9.015864832,
+   "output": "The value that fills the blank is 20 days. This is supported by \u00a7 668.211(b)(2).",
+   "value_correct": 1.0,
+   "gold_cited": 0.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:668.211"
+   ]
+  },
+  {
+   "id": "cite-18",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1916,
+   "output_tokens": 20,
+   "ttft_s": 1.7707796096801758,
+   "total_s": 5.249204635620117,
+   "decode_tok_s": 5.4622422097097845,
+   "peak_gb": 8.861579264,
+   "output": "The value is 30.\n\n\u00a7 273.28(1)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:273.28"
+   ]
+  },
+  {
+   "id": "cite-19",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7944,
+   "output_tokens": 80,
+   "ttft_s": 6.826289176940918,
+   "total_s": 21.913456439971924,
+   "decode_tok_s": 5.236238097099808,
+   "peak_gb": 8.995643392,
+   "output": "The value is 12.\n\n\"the employee may not take more than 12 weeks of FMLA leave to care for the newborn child during the single 12-month period, even if the employee takes fewer than 14 workweeks of FMLA leave to care for a covered servicemember.\" \u00a7 825.127(e)(3).",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:825.127"
+   ]
+  },
+  {
+   "id": "cite-20",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1911,
+   "output_tokens": 33,
+   "ttft_s": 1.7758328914642334,
+   "total_s": 7.61112904548645,
+   "decode_tok_s": 5.4838690540055435,
+   "peak_gb": 8.860791296,
+   "output": "The value that fills the blank is $1,000,000. \n\n\u00a7 200.501(e)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.501"
+   ]
+  },
+  {
+   "id": "cite-21",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 7019,
+   "output_tokens": 51,
+   "ttft_s": 6.06930136680603,
+   "total_s": 15.481734037399292,
+   "decode_tok_s": 5.312122991988268,
+   "peak_gb": 8.97857536,
+   "output": "The value is 12 weeks. According to \u00a7 825.120(3), if one spouse is ineligible for FMLA leave, the other spouse would be entitled to a full 12 weeks of FMLA leave.",
+   "value_correct": 1.0,
+   "gold_cited": 0.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:825.120"
+   ]
+  },
+  {
+   "id": "cite-22",
+   "type": "cite",
+   "bucket": "2k",
+   "input_tokens": 1742,
+   "output_tokens": 30,
+   "ttft_s": 1.7750959396362305,
+   "total_s": 7.185826063156128,
+   "decode_tok_s": 5.359720285057266,
+   "peak_gb": 8.820690432,
+   "output": "The value that fills the blank is 100 percent.\n\n\u00a7 200.446(a eyes(3)",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:200.446"
+   ]
+  },
+  {
+   "id": "cite-23",
+   "type": "cite",
+   "bucket": "8k",
+   "input_tokens": 6854,
+   "output_tokens": 58,
+   "ttft_s": 5.73341178894043,
+   "total_s": 16.26563286781311,
+   "decode_tok_s": 5.411963874774742,
+   "peak_gb": 8.974304768,
+   "output": "The value is 60.\n\n\"The covered entity must act on the individual's request for an accounting, no later than 60 days after receipt of such a request, as follows: [See \u00a7 164.528(c)(1).\"",
+   "value_correct": 1.0,
+   "gold_cited": 1.0,
+   "cites_outside_excerpt": 0.0,
+   "cited": [
+    "sec:164.528"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,50 @@
+{
+ "pool_size": 8233,
+ "gates": {
+  "medicine": {
+   "pool_val": {
+    "tpr": 0.9589040875434875,
+    "fpr": 0.011202390305697918,
+    "n_pos": 1455,
+    "n_neg": 6654
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.8449999690055847,
+    "law": 0.0,
+    "math": 0.004999999888241291,
+    "computer_science": 0.029999999329447746,
+    "history": 0.014999999664723873
+   }
+  },
+  "law": {
+   "pool_val": {
+    "tpr": 1.0,
+    "fpr": 0.0029739777091890574,
+    "n_pos": 1509,
+    "n_neg": 6623
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.0,
+    "law": 0.8899999856948853,
+    "math": 0.0,
+    "computer_science": 0.0,
+    "history": 0.5349999666213989
+   }
+  },
+  "math": {
+   "pool_val": {
+    "tpr": 0.9870129823684692,
+    "fpr": 0.009188361465930939,
+    "n_pos": 1440,
+    "n_neg": 6688
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.009999999776482582,
+    "law": 0.0,
+    "math": 0.9599999785423279,
+    "computer_science": 0.375,
+    "history": 0.0
+   }
+  }
+ }
+}

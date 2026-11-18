@@ -1,0 +1,217 @@
+{
+ "summary": {
+  "config": "26b-routed",
+  "load_s": 9.787309885025024,
+  "cold_first_answer_s": 37.77318811416626,
+  "warm_ttft_s": {
+   "2k": 1.1873273849487305,
+   "8k": 2.3776357173919678,
+   "versions": null
+  },
+  "warm_total_s": {
+   "2k": 17.380088090896606,
+   "8k": 18.101100206375122,
+   "versions": null
+  },
+  "decode_tok_s": 5.424113441479807,
+  "peak_gb": {
+   "2k": 8.929887744,
+   "8k": 10.116210176,
+   "versions": null
+  },
+  "probe": {
+   "16384": {
+    "peak_gb": 13.742565888,
+    "seconds": 9.46653437614441
+   }
+  },
+  "extract_f1": 0.38095238095238093,
+  "cite_value": 0,
+  "cite_gold_cited": 0,
+  "cite_outside": 0,
+  "reconcile_value": 0,
+  "reconcile_label": 0,
+  "packs_chosen": {
+   "medicine": 0,
+   "law": 6,
+   "math": 0
+  },
+  "swaps": 1,
+  "swap_s_median": 4.183540344238281,
+  "gate_s_median": 0.33437860012054443
+ },
+ "rows": [
+  {
+   "id": "extract-0",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 2283,
+   "output_tokens": 117,
+   "ttft_s": 6.973430395126343,
+   "total_s": 27.985878229141235,
+   "decode_tok_s": 5.520537203296207,
+   "peak_gb": 8.929887744,
+   "gate_probs": {
+    "medicine": 0.003191331634297967,
+    "law": 0.9821047186851501,
+    "math": 0.045882273465394974
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 1.7120733261108398,
+   "swap_s": 4.183540344238281,
+   "output": "\u00a7 668.187(a)(1)\n\u00a7 668.187(a)(2)\n\u00a7 668.187\n34 CFR 682.200\n34 CFR 685.102\n\u00a7 668.183(d)(2)\n\u00a7 668.183(d)(1)\n\u00a7 668.183(d)\n\u00a7 668.195",
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571,
+   "pred": [
+    "sec:668.183",
+    "sec:668.187",
+    "sec:682.200",
+    "sec:685.102"
+   ]
+  },
+  {
+   "id": "extract-1",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6479,
+   "output_tokens": 55,
+   "ttft_s": 2.3926990032196045,
+   "total_s": 12.348242998123169,
+   "decode_tok_s": 5.424113441479807,
+   "peak_gb": 10.116210176,
+   "gate_probs": {
+    "medicine": 0.03750341385602951,
+    "law": 0.9257922172546387,
+    "math": 0.008245794102549553
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 0.3320920467376709,
+   "output": "\u00a7 180.300\n\u00a7 200.1\n\u00a7 200.208\n\u00a7 200.521\n\u00a7 200.513(a)(4)(viii)",
+   "precision": 0.8,
+   "recall": 0.4444444444444444,
+   "f1": 0.5714285714285714,
+   "pred": [
+    "sec:180.300",
+    "sec:200.1",
+    "sec:200.208",
+    "sec:200.513",
+    "sec:200.521"
+   ]
+  },
+  {
+   "id": "extract-2",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1584,
+   "output_tokens": 19,
+   "ttft_s": 1.1618783473968506,
+   "total_s": 4.514779567718506,
+   "decode_tok_s": 5.368485027504986,
+   "peak_gb": 8.772570624,
+   "gate_probs": {
+    "medicine": 0.008230292238295078,
+    "law": 0.9549821615219116,
+    "math": 0.00761942146345973
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 0.2972877025604248,
+   "output": "\u00a7 273.27 (a)\n(No legal authority cited)",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "extract-3",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 6436,
+   "output_tokens": 86,
+   "ttft_s": 2.3776357173919678,
+   "total_s": 18.101100206375122,
+   "decode_tok_s": 5.4059332826780215,
+   "peak_gb": 10.100595712,
+   "gate_probs": {
+    "medicine": 0.012818793766200542,
+    "law": 0.9424393177032471,
+    "math": 0.013708689250051975
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 0.3380575180053711,
+   "output": "- 200.514 (a)\n- GAGAS\n- 200.514 (c)\n- 200.514 (c) (3)\n- 200.514 (d)\n- 200.514 (e)\n- 200.514 (f)",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "extract-4",
+   "type": "extract",
+   "bucket": "2k",
+   "input_tokens": 1859,
+   "output_tokens": 160,
+   "ttft_s": 1.2127764225006104,
+   "total_s": 30.245396614074707,
+   "decode_tok_s": 5.476598355602271,
+   "peak_gb": 8.832160768,
+   "gate_probs": {
+    "medicine": 0.0003923158219549805,
+    "law": 0.9412551522254944,
+    "math": 0.0028683640994131565
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 0.3171567916870117,
+   "output": "\u00a7 200.449 (a) (1)\n\u00a7 200.449 (b) (1)\n\u00a7 200.449 (b) (2)\n\u00a7 200.449 (c) (2)\n\u00a7 200.449 (c) (7)\n\u00a7 200.449 (d) (e)\n\u00a7 200.449 (g)\n\u00a7 200.449 (g) (1)\n\u00a7 200.449 (g) (2)\n\u00a7 200.449 (g) (3)\n\u00a7 2",
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pred": []
+  },
+  {
+   "id": "extract-5",
+   "type": "extract",
+   "bucket": "8k",
+   "input_tokens": 4195,
+   "output_tokens": 160,
+   "ttft_s": 1.712303638458252,
+   "total_s": 30.98802661895752,
+   "decode_tok_s": 5.431121209403123,
+   "peak_gb": 9.367524864,
+   "gate_probs": {
+    "medicine": 0.050090767443180084,
+    "law": 0.9865723848342896,
+    "math": 0.04054361954331398
+   },
+   "fired": [
+    "law"
+   ],
+   "pack": "law",
+   "gate_s": 0.33666515350341797,
+   "output": "\u00a7 273.10(f)\n\u00a7 273.7(a)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)(4)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.2(i)\n\u00a7 273.2(c)(5)\n\u00a7 273.2(e)\n\u00a7 273.",
+   "precision": 1.0,
+   "recall": 0.75,
+   "f1": 0.8571428571428571,
+   "pred": [
+    "sec:273.10",
+    "sec:273.2",
+    "sec:273.7"
+   ]
+  }
+ ]
+}

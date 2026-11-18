@@ -1,0 +1,138 @@
+{
+ "pool_size": 200,
+ "feature_sets": {
+  "h5": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  },
+  "h11": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  },
+  "h17": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  },
+  "router": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.029411764815449715
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  },
+  "h11+router": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  },
+  "h17+router": {
+   "medicine": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "law": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "math": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   }
+  }
+ },
+ "chosen": {
+  "medicine": "h5",
+  "law": "h5",
+  "math": "h5"
+ },
+ "gates": {
+  "medicine": {
+   "features": "h5",
+   "pool_val": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.5625,
+    "law": 0.0,
+    "math": 0.0,
+    "computer_science": 0.0,
+    "history": 0.0
+   }
+  },
+  "law": {
+   "features": "h5",
+   "pool_val": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.0,
+    "law": 0.6875,
+    "math": 0.0,
+    "computer_science": 0.0,
+    "history": 0.6875
+   }
+  },
+  "math": {
+   "features": "h5",
+   "pool_val": {
+    "tpr": 1.0,
+    "fpr": 0.0
+   },
+   "mmlu_fire_rate": {
+    "medicine": 0.0625,
+    "law": 0.0,
+    "math": 0.9375,
+    "computer_science": 0.1875,
+    "history": 0.0
+   }
+  }
+ }
+}

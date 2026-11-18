@@ -1,0 +1,38 @@
+{
+ "installed": [
+  "base",
+  "medicine",
+  "law",
+  "math"
+ ],
+ "experts_installed": 2533,
+ "load_seconds": 15.205047845840454,
+ "gpu_allocated_gb": 13.408637952,
+ "gpu_reserved_gb": 13.511950336,
+ "accuracy": {
+  "math": 0.5
+ },
+ "pred": {
+  "math": [
+   1,
+   3,
+   1,
+   3,
+   3,
+   2,
+   1,
+   1,
+   3,
+   3,
+   2,
+   1,
+   0,
+   1,
+   1,
+   2
+  ]
+ },
+ "peak_gpu_scoring_gb": 14.623794688,
+ "gen_tokens_per_s": 6.049648639170845,
+ "peak_gpu_generate_gb": 13.478501376
+}

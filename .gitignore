@@ -1,0 +1,25 @@
+# model weights and pack files: rebuilt by the scripts (tens of GB)
+quant/
+packs/
+packs_*/
+distill/
+*.safetensors
+*.bin
+expert_packs/gate_features.pt
+
+# datasets pulled from third-party sources: rebuilt by scripts/build_*.py
+data/prompts/
+data/prompts_base/
+data/distill/
+data/packs/
+data/policy/cache/
+data/policy/build.log
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# local smoke-test leftovers
+profiles/_smoke*
