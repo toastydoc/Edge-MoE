@@ -68,6 +68,10 @@ def chunked_generate(model, input_ids, max_new_tokens, chunk=1024, logits_proces
             e = min(s + chunk, n - 1)
             model(input_ids=input_ids[:, s:e], attention_mask=torch.ones_like(input_ids[:, :e]),
                   past_key_values=cache, use_cache=True, logits_to_keep=1)  # fmt: skip
+            # each chunk allocates slightly larger buffers than the last; without this the
+            # caching allocator's pool grows past the card's memory and Windows spills it to
+            # system RAM (32k prompt: 24GB reserved for 7.6GB in use, ~9x slower chunks)
+            torch.cuda.empty_cache()
         return model.generate(input_ids=input_ids, attention_mask=torch.ones_like(input_ids), past_key_values=cache,
                               max_new_tokens=max_new_tokens, do_sample=False, logits_processor=logits_processor)  # fmt: skip
 
@@ -102,13 +106,17 @@ def gate_features(model, enc, layers=(5, 17)):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True, choices=["gemma4-12b", "gemma3-12b", "e4b", "26b", "26b-routed"])
+    ap.add_argument("--config", required=True, choices=["gemma4-12b", "gemma3-12b", "e4b", "26b", "26b-routed", "26b-store"])
     ap.add_argument("--install", nargs="*", default=["base", "law"])
+    ap.add_argument("--select", default="joint",
+                    help="26b-store: pack:<domain> | mix:<d1>+<d2> | joint | plan | offload")  # fmt: skip
+    ap.add_argument("--budget", type=int, default=51, help="26b-store: experts per layer on the GPU")
+    ap.add_argument("--tasks", default="tasks.jsonl")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--probe", type=int, nargs="*", default=[16384, 32768])
     ap.add_argument("--gate-tokens", type=int, default=2048)
     args = ap.parse_args()
-    tasks = [json.loads(l) for l in (ROOT / "data" / "policy" / "tasks.jsonl").read_text(encoding="utf-8").splitlines()]
+    tasks = [json.loads(l) for l in (ROOT / "data" / "policy" / args.tasks).read_text(encoding="utf-8").splitlines()]
     # interleave types so the cold task and the warm median are not one type
     by = {t: [x for x in tasks if x["type"] == t] for t in MAX_NEW}
     tasks = [x for grp in zip(*by.values()) for x in grp] + [x for g in by.values() for x in g[min(map(len, by.values())):]]
@@ -116,8 +124,36 @@ def main() -> None:
 
     torch.cuda.reset_peak_memory_stats()
     t0 = time.time()
-    gates, current = None, None
-    if args.config.startswith("26b"):
+    gates, current, plan, offload_stats = None, None, False, None
+    if args.config == "26b-store":
+        from edge_moe.expert_packs import counts, load_manifest, pack_mask
+        from edge_moe.expert_store import ExpertStore, joint_mask, mix_mask
+
+        # build the pinned store before the model: filling it after the model loaded crashed intermittently on Windows
+        store = ExpertStore.from_packs([ROOT / "quant" / f"{n}.safetensors" for n in ("base", "medicine", "law", "math", "rest")])
+        print(f"expert store: {store.gb():.1f}GB in pinned RAM", flush=True)
+        model, tok, _ = load_resident([ROOT / "quant" / "base.safetensors"], quant_dense=True, quant_embed=True)
+        base_mask = load_manifest(ROOT / "expert_packs" / "base.json")[1]
+        prof = lambda d: counts(ROOT / ("profiles_base/universal.npz" if d == "universal" else f"profiles/{d}.npz"))  # noqa: E731
+        kind, _, arg = args.select.partition(":")
+        n = args.budget
+        if kind == "pack":
+            installed = store.install(model, base_mask | pack_mask(prof(arg), base_mask, n / 128))
+        elif kind == "mix":
+            installed = store.install(model, mix_mask(base_mask, [prof(d) for d in arg.split("+")], n))
+        elif kind == "joint":
+            ds = arg.split("+") if arg else ["universal", "medicine", "law", "math", "regulation"]
+            installed = store.install(model, joint_mask([prof(d) for d in ds], n))
+        elif kind == "plan":
+            installed, plan = store.install(model, base_mask | pack_mask(prof("law"), base_mask, n / 128)), True
+        elif kind == "offload":
+            offload_stats = store.install_offload(model, n, preload=joint_mask([prof(d) for d in ("universal", "medicine", "law", "math", "regulation")], n))
+        else:
+            raise SystemExit(f"unknown --select {args.select}")
+        if offload_stats is None:
+            print(f"installed {int(installed.sum())} experts ({installed.sum(1).float().mean():.0f}/layer)", flush=True)
+        name = f"26b_{args.select.replace(':', '-').replace('+', '-')}_n{n}"
+    elif args.config.startswith("26b"):
         install = ["base"] if args.config == "26b-routed" else args.install
         model, tok, installed = load_resident([ROOT / "quant" / f"{n}.safetensors" for n in install], quant_dense=True, quant_embed=True)
         base_mask = installed.clone()
@@ -144,6 +180,7 @@ def main() -> None:
         enc = tok.apply_chat_template([{"role": "user", "content": content}], add_generation_prompt=True, return_tensors="pt",
                                       return_dict=True).to(device)  # fmt: skip
         n_in = enc["input_ids"].shape[1]
+        torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.synchronize()
         start = time.time()
@@ -163,19 +200,40 @@ def main() -> None:
                 route["swap_s"] = time.time() - ts
                 current = pick
             set_allowed(model, installed)
+        if plan:
+            # ask the router what it wants: one base-plate pass over the end of the prompt, recording
+            # each router's full probabilities, then install base + the experts it wanted most
+            from edge_moe.expert_store import RouterPlan, plan_mask
+
+            set_allowed(model, base_mask)
+            with RouterPlan(model) as rp, torch.inference_mode():
+                model.model(input_ids=enc["input_ids"][:, -args.gate_tokens :])
+            want = plan_mask(rp.mass, args.budget, keep=base_mask)
+            torch.cuda.synchronize()
+            route = {"plan_s": time.time() - start, "plan_changed": int((want ^ installed).sum()) // 2}
+            ts = time.time()
+            installed = store.install(model, want)
+            torch.cuda.synchronize()
+            route["swap_s"] = time.time() - ts
+        if offload_stats is not None:
+            b0, m0, p0 = offload_stats["bytes"], offload_stats["misses"], offload_stats["picks"]
         ft = _FirstToken()
         out = chunked_generate(model, enc["input_ids"], MAX_NEW[task["type"]], logits_processor=LogitsProcessorList([ft]))
         torch.cuda.synchronize()
         end = time.time()
         text = tok.decode(out[0, n_in:], skip_special_tokens=True)
         n_out = out.shape[1] - n_in
+        if offload_stats is not None:
+            route = {"copied_gb": (offload_stats["bytes"] - b0) / 1e9, "miss_rate": (offload_stats["misses"] - m0) / max(offload_stats["picks"] - p0, 1)}
         r = {"id": task["id"], "type": task["type"], "bucket": task["bucket"], "input_tokens": n_in, "output_tokens": n_out,
              "ttft_s": ft.t - start, "total_s": end - start, "decode_tok_s": (n_out - 1) / max(end - ft.t, 1e-6),
-             "peak_gb": torch.cuda.max_memory_allocated() / 1e9, **route, "output": text, **score(task, text)}  # fmt: skip
+             "peak_gb": torch.cuda.max_memory_allocated() / 1e9, "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1e9, **route, "output": text, **score(task, text)}  # fmt: skip
         rows.append(r)
         main_metric = {"extract": "f1", "cite": "value_correct", "reconcile": "value_correct"}[task["type"]]
         print(f"  {i + 1}/{len(tasks)} {task['id']:>12} {n_in:>6} tok in, ttft {r['ttft_s']:5.1f}s, total {r['total_s']:5.1f}s, "
-              f"peak {r['peak_gb']:.2f}GB, {main_metric} {r[main_metric]:.2f}" + (f", pack {route['pack']}" if route else ""), flush=True)  # fmt: skip
+              f"peak {r['peak_gb']:.2f}GB, {main_metric} {r[main_metric]:.2f}" + (f", pack {route['pack']}" if "pack" in route else "")
+              + (f", plan {route['plan_s']:.1f}s swap {route['swap_s']:.1f}s changed {route['plan_changed']}" if "plan_s" in route else "")
+              + (f", copied {route['copied_gb']:.1f}GB miss {route['miss_rate']:.2f}" if "copied_gb" in route else ""), flush=True)  # fmt: skip
 
     probe = {}
     filler = "\n\n".join(t["document"] for t in tasks if t["bucket"] == "8k")
@@ -189,7 +247,8 @@ def main() -> None:
             t1 = time.time()
             chunked_generate(model, ids, 8)
             torch.cuda.synchronize()
-            probe[n] = {"peak_gb": torch.cuda.max_memory_allocated() / 1e9, "seconds": time.time() - t1}
+            probe[n] = {"peak_gb": torch.cuda.max_memory_allocated() / 1e9, "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1e9,
+                        "seconds": time.time() - t1}  # fmt: skip
         except torch.cuda.OutOfMemoryError:
             probe[n] = {"peak_gb": None, "oom": True}
         print(f"  probe {n} tokens: {probe[n]}", flush=True)
@@ -203,6 +262,7 @@ def main() -> None:
                "warm_total_s": {b: med([r["total_s"] for r in warm if r["bucket"] == b]) for b in ("2k", "8k", "versions")},
                "decode_tok_s": med([r["decode_tok_s"] for r in warm]),
                "peak_gb": {b: max([r["peak_gb"] for r in rows if r["bucket"] == b], default=None) for b in ("2k", "8k", "versions")},
+               "peak_reserved_gb": {b: max([r["peak_reserved_gb"] for r in rows if r["bucket"] == b], default=None) for b in ("2k", "8k", "versions")},
                "probe": probe,
                "extract_f1": statistics.mean([r["f1"] for r in rows if r["type"] == "extract"] or [0]),
                "cite_value": statistics.mean([r["value_correct"] for r in rows if r["type"] == "cite"] or [0]),
@@ -210,13 +270,21 @@ def main() -> None:
                "cite_outside": statistics.mean([r["cites_outside_excerpt"] for r in rows if r["type"] == "cite"] or [0]),
                "reconcile_value": statistics.mean([r["value_correct"] for r in rows if r["type"] == "reconcile"] or [0]),
                "reconcile_label": statistics.mean([r["label_correct"] for r in rows if r["type"] == "reconcile"] or [0])}  # fmt: skip
+    if plan:
+        summary["plan_s_median"] = med([r["plan_s"] for r in rows])
+        summary["swap_s_median"] = med([r["swap_s"] for r in rows])
+        summary["plan_changed_median"] = med([r["plan_changed"] for r in rows])
+    if offload_stats is not None:
+        summary["copied_gb_median"] = med([r["copied_gb"] for r in rows])
+        summary["copied_gb_per_token"] = statistics.mean([r["copied_gb"] / r["output_tokens"] for r in rows])
+        summary["miss_rate"] = statistics.mean([r["miss_rate"] for r in rows])
     if gates:
         summary["packs_chosen"] = {d: sum(r["pack"] == d for r in rows) for d in PACKS}
         summary["swaps"] = sum("swap_s" in r for r in rows)
         summary["swap_s_median"] = med([r["swap_s"] for r in rows if "swap_s" in r])
         summary["gate_s_median"] = med([r["gate_s"] for r in rows])
     print(json.dumps({k: v for k, v in summary.items()}, indent=1), flush=True)
-    tag = name + (f"_limit{args.limit}" if args.limit else "")
+    tag = name + (f"_{Path(args.tasks).stem}" if args.tasks != "tasks.jsonl" else "") + (f"_limit{args.limit}" if args.limit else "")
     (ROOT / "results" / f"policy_{tag}.json").write_text(json.dumps({"summary": summary, "rows": rows}, indent=1), encoding="utf-8")
 
 

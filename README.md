@@ -30,27 +30,43 @@ All weights are 4-bit (symmetric round-to-nearest, groups of 32, bf16 scales), a
 
 At 8 GB the pack ties Gemma 4 12B on math, trails it by 7.5 points on law, and is much weaker outside its domain. With the full pack at 8.5 GB it matches the 12B on law and leads it by 11–14 points on math. The selectors fire on 88–100% of their own domain's questions.
 
-### Held-out policy tasks: 63 eCFR tasks, automatic grading
+### Held-out policy tasks at a fixed 8 GB: 122 eCFR tasks
 
-The tasks are extracting cited authorities, filling a value with a supporting citation, and reconciling two dated versions of a rule.
+The tasks are 50 extract (list the authorities a section cites), 50 cite (fill a value and cite its section) and 22 reconcile (two dated versions of a rule: which value applies on a date). They are graded automatically. Every 26B configuration at 8 GB keeps exactly **51 of 128 experts per layer** on the GPU and runs on the same 4-bit weights; they differ only in *which* experts are there.
 
-| Configuration | Peak, 8k docs | Peak, 32k prompt | Extract F1 | Cite value / right section | Reconcile | Load / cold first answer | Decode |
+| Configuration (8 GB unless noted) | Extract F1 | Cite value / right section | Reconcile | Peak GPU (in use / reserved) | First token, 2k / 8k | Decode | 32k prompt |
 |---|---|---|---|---|---|---|---|
-| Gemma 4 12B | 8.3 GB | 8.7 GB | .60 | 1.00 / .96 | 1.00 | 68 s / 89 s | 3.3 tok/s |
-| 26B base + 40% law pack | 7.7 GB | 8.9 GB | .39 | .96 / .71 | .60 | 12 s / 25 s | 5.6 tok/s |
-| 26B base + law pack | 9.0 GB | 10.2 GB | .51 | 1.00 / .79 | .73 | 13 s / 34 s | 5.4 tok/s |
-| 26B, automatic routing | 9.0 GB | 10.2 GB | .51 | 1.00 / .79 | .73 | 9 s / 34 s | 5.4 tok/s |
-| 26B base + all three packs | 11.0 GB | 12.3 GB | .65 | 1.00 / .83 | 1.00 | 15 s / 31 s | 5.5 tok/s |
+| Gemma 4 12B (dense) | .59 | .98 / .90 | **1.00** | 8.3 / 9.2 GB | 1.4 / 4.5 s | 3.2 tok/s | 25 s |
+| Base + law pack (from MMLU law) | .39 | 1.00 / .78 | .68 | 7.7 / 8.5 GB | 1.7 / 5.9 s | 5.0 tok/s | 30 s |
+| **Base + regulation pack** (non-test CFR titles) | .57 | 1.00 / **.98** | .73 | 7.7 / 8.5 GB | 1.7 / 6.0 s | 5.1 tok/s | 30 s |
+| Base + regulation and math, shared budget | .55 | 1.00 / .98 | .73 | 7.7 / 8.5 GB | 1.6 / 5.8 s | 5.1 tok/s | 27 s |
+| One trimmed model for all five domains | .51 | .98 / .92 | .91 | 7.7 / 8.5 GB | 1.6 / 5.6 s | 5.4 tok/s | 27 s |
+| Per-prompt plan (router picks the 51) | .56 | 1.00 / .98 | .73 | 7.7 / 8.4 GB | 3.6 / 7.5 s | 5.5 tok/s | 26 s |
+| **Expert offloading** (all 128 reachable from RAM, 51 cached) | **.77** | 1.00 / .98 | **1.00** | 7.7 / 8.5 GB | 3.1 / 11.2 s | 5.4 tok/s | 57 s |
+| Base + three packs (11 GB, over the limit) | .66 | 1.00 / 1.00 | 1.00 | 11.0 / 11.8 GB | 2.1 / 7.9 s | 5.2 tok/s | 37 s |
 
-The pack chosen from MMLU law questions does **not** carry over to regulatory work: it trails the 12B on every task type. Adding the math and medicine packs does, and reconciling dates looks like the reason. The selector picked law for all 63 tasks; it costs 0.3 s per question, and a pack swap takes about 3.4 s. The lesson is to build packs from the work the device will actually do.
+Paired comparisons on the same tasks (bootstrap 95% intervals), against the regulation pack:
+
+- **Packs built from the real work matter.** The regulation pack beats the MMLU-law pack by 18 points on extract and 20 on citing the right section, and cites the right section more often than the 12B (.98 vs .90).
+- **Adding a second domain cost nothing measurable.** Regulation plus math in the same 51 slots is within noise of regulation alone on all three task types.
+- **The 12B wins reconcile** (+27 points, 6 wins and 0 losses). All six pack failures have the same shape: the version printed first governs, and the pack chooses the second one. Configurations that keep more general experts (the trimmed model, offloading, 11 GB) do not show this.
+- **Offloading has the best quality at 8 GB.** It is 21 points ahead on extract and 27 on reconcile, and at least as good as the 11 GB model. The cost is the prompt: it copies about 0.85 GB from RAM per prompt token (a third of expert lookups miss the GPU cache), first token takes roughly twice as long, and a 32k prompt takes 57 s instead of 30 s. Decoding speed is unaffected.
+- **Picking experts per prompt did not help.** One base-only router pass (0.5 s) plus a swap (1.5 s, about 190 experts changed) scored the same as the fixed regulation pack.
+
+**Where this leaves the claim.** At 8 GB the packs are 1.6× faster than the 12B at decoding and fit under the limit, which the 12B does not quite. On quality they match the 12B on extract, beat it on citations and lose on reconcile. The decisive alternative turned out to be offloading the full 26B: same memory, equal or better quality on every task type, and only the time to first token is worse. A pack system only wins where first-token latency on long prompts matters more than reconcile-type reasoning.
+
+An earlier 63-task run (law packs only, no limit) is kept in `results/policy_*.json` without the `_tasks_v2` suffix.
 
 ## Caveats
 
-- **Small samples:** 200 questions per domain is about ±3 points. With 15 reconcile tasks, each task is worth 6.7 points.
+- **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
 - **Plain rounding:** round-to-nearest 4-bit hurts dense models more than the MoE; E4B lost 7 points. GPTQ, AWQ or Q4_K_M would be a fairer comparison.
 - **Speed:** speeds come from a plain-PyTorch prototype that unpacks the 4-bit weights on every step. They compare the models with each other, not with what a real runtime would reach.
 - **Load times:** the 26B loads from pre-quantised pack files, while the dense models are quantised as they load.
-- **Long prompts:** a 32k-token prompt is slow on the 26B (91–152 s). The cause has not been diagnosed.
+- **Memory:** "8 GB" means peak memory in use by PyTorch; the allocator reserves 0.7–0.9 GB more. Gemma 4 12B peaks at 8.3 GB, slightly over the limit.
+- **Long prompts:** the earlier slow 32k prompts (91–152 s) were allocator fragmentation spilling into system RAM; freeing the cache after each prefill chunk fixed it (now 25–37 s, 57 s with offloading).
+- **Offloading uses this prototype's own LRU cache** with pinned RAM, preloaded with the trimmed model's experts. A production offloading runtime would prefetch and could be faster; llama.cpp was not tested.
+- **Reconcile tasks** come only from yearly penalty and threshold updates where a value sits in the paragraph text.
 
 ## Prior work
 
@@ -70,8 +86,10 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Score the 26B from packs on MMLU | `scripts/eval_quant.py --quant-dense --quant-embed` |
 | Score the dense baselines | `scripts/eval_dense_quant.py --quant-embed` |
 | Build the eCFR policy tasks | `scripts/build_policy_tasks.py` |
+| Profile the regulation pack | `scripts/build_reg_prompts.py`, then `scripts/profile_domain.py` |
 | Run the policy tasks | `scripts/eval_policy.py --config ...` |
+| The 8 GB comparison | `scripts/run_8gb_comparison.ps1` (`edge_moe/expert_store.py` holds all configurations) |
 
-The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
+The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
 Data sources: MMLU (MIT licence), and the eCFR (US federal regulations, public domain). Model weights are subject to the [Gemma terms of use](https://ai.google.dev/gemma/terms); none are redistributed here.

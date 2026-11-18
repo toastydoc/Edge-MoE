@@ -40,7 +40,10 @@ from edge_moe.policy_scoring import cite_keys, value_tokens  # noqa: E402
 API = "https://www.ecfr.gov/api/versioner/v1"
 PARTS = [(2, "200"), (45, "164"), (29, "825"), (7, "273"), (34, "668")]
 # extra parts scanned only for dated versions (values adjusted most years)
-VERSION_PARTS = PARTS + [(29, "1903"), (12, "1026"), (42, "1003")]
+VERSION_PARTS = PARTS + [(29, "1903"), (12, "1026"), (42, "1003"),
+                         # civil penalty adjustments (yearly); none in the regulation pack's titles
+                         (29, "2575"), (29, "578"), (34, "36"), (45, "102"), (7, "3"), (12, "1083"),
+                         (24, "28"), (33, "27"), (15, "6"), (28, "85")]  # fmt: skip
 CACHE = ROOT / "data" / "policy" / "cache"
 CHARS = {"2k": 8000, "8k": 32000}  # ~4 characters per token
 
@@ -125,6 +128,7 @@ def mask_candidates(text: str) -> list[tuple[str, str]]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--per-type", type=int, default=24)
+    ap.add_argument("--out", default="tasks.jsonl")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     rng = random.Random(args.seed)
@@ -171,7 +175,11 @@ def main() -> None:
     # reconcile: two dated versions of one section that differ in one value
     cands = []
     for t, p in VERSION_PARTS:
-        vers = json.loads(get(f"{API}/versions/title-{t}.json?part={p}"))["content_versions"]
+        try:
+            vers = json.loads(get(f"{API}/versions/title-{t}.json?part={p}"))["content_versions"]
+        except Exception as e:  # noqa: BLE001
+            print(f"  skip {t} CFR part {p} versions: {e}", flush=True)
+            continue
         by_sec = {}
         for v in vers:
             if v["type"] == "section" and v["substantive"] and not v["removed"]:
@@ -234,7 +242,7 @@ def main() -> None:
         per_section[n] = per_section.get(n, 0) + 1
         print(f"  reconcile {made}: {t} CFR {n} {d_old} -> {d_new}: {val_old} -> {val_new}", flush=True)
 
-    out = ROOT / "data" / "policy" / "tasks.jsonl"
+    out = ROOT / "data" / "policy" / args.out
     out.write_text("".join(json.dumps(x) + "\n" for x in tasks), encoding="utf-8")
     counts = {}
     for x in tasks:
