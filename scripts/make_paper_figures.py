@@ -8,7 +8,7 @@ Writes to figures/:
     fig2_quality        (a) extra loss per domain for shared core / random / own pack / best other pack,
                         (b) break-even: one fixed 51-expert model shared by k domains
     fig3_routing        what the router's choice tracks, per layer: domain vs token type
-    fig4_pack_size      blind-judged quality vs GPU weight memory as the pack budget grows (51/64/80/96 per layer)
+    fig4_pack_size      blind-judged quality vs GPU weight memory as the pack budget grows (51/64/80/96 per layer), with dense Gemma 4 12B
 
 Sized for a two-column paper: full text width is 7.2 in.
 """
@@ -199,7 +199,12 @@ def pack_size_summary() -> dict:
                      "loss": sum(r["final"] == "full" for r in v), "win_or_tie": round(ok.mean(), 3),
                      "ci": [round(float(np.percentile(boots, 2.5)), 3), round(float(np.percentile(boots, 97.5)), 3)],
                      "weights_gb": mem.get(name, round(slope * n + icpt, 2)), "measured": name in mem})  # fmt: skip
-    out = {"rows": rows, "full_weights_gb": round(slope * 128 + icpt, 2), "gb_per_expert_per_layer": round(slope, 4)}
+    v = [json.loads(l) for l in (ROOT / "results" / "judge" / "verdicts_gemma4_12b_vs_full.jsonl").read_text(encoding="utf-8").splitlines()]
+    ok = np.array([r["final"] != "full" for r in v], float)
+    boots = rng.choice(ok, (2000, len(ok))).mean(1)
+    dense = {"name": "Gemma 4 12B (dense)", "weights_gb": mem["gemma4_12b"], "win_or_tie": round(ok.mean(), 3),
+             "ci": [round(float(np.percentile(boots, 2.5)), 3), round(float(np.percentile(boots, 97.5)), 3)]}  # fmt: skip
+    out = {"rows": rows, "gemma4_12b": dense, "full_weights_gb": round(slope * 128 + icpt, 2), "gb_per_expert_per_layer": round(slope, 4)}
     (ROOT / "results" / "pack_size_summary.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     return out
 
@@ -215,6 +220,11 @@ def fig4() -> None:
     ax.errorbar(gb, p, yerr=[lo, hi], fmt="o-", ms=3.5, lw=1.2, capsize=2, color=(0.13, 0.42, 0.62), label="Own expert pack")
     for r, x, y in zip(rows, gb, p):
         ax.annotate(f"{r['per_layer']}/layer", (x, y), textcoords="offset points", xytext=(5, -9), fontsize=6.5)
+    d = s["gemma4_12b"]
+    dp = d["win_or_tie"] * 100
+    ax.errorbar([d["weights_gb"]], [dp], yerr=[[dp - d["ci"][0] * 100], [d["ci"][1] * 100 - dp]], fmt="D", ms=4, capsize=2,
+                color=(0.85, 0.45, 0.2), label="Gemma 4 12B (dense)")  # fmt: skip
+    ax.legend(frameon=False, loc="upper left")
     ax.axvline(s["full_weights_gb"], ls="--", lw=0.9, color="black")
     ax.annotate(f"Full model\n(128/layer, ~{s['full_weights_gb']:.1f} GB)", (s["full_weights_gb"], 8), textcoords="offset points",
                 xytext=(-4, 0), ha="right", fontsize=6.5)  # fmt: skip

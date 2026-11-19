@@ -9,6 +9,7 @@ Configurations (all the same 4-bit Gemma 4 26B-A4B weights):
     full     all 128 experts, through the offloading path (exact full-model output)
     own      base plate + the question's own domain pack, 51 per layer (swap packs per domain)
     shared   one fixed 51-per-layer model built for all ten domains (no swapping)
+    gemma4_12b   the dense Gemma 4 12B, 4-bit the same way (the best model that fits the same device)
 
 Greedy decoding, batched. Writes results/judge/questions.jsonl and
 results/judge/answers_<config>.jsonl (answers_<config>_n<budget>.jsonl when --budget is not 51); skips
@@ -26,6 +27,7 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 from edge_moe.expert_packs import counts, load_manifest, pack_mask  # noqa: E402
 from edge_moe.expert_store import ExpertStore, mix_mask  # noqa: E402
 from edge_moe.quant_experts import load_resident  # noqa: E402
@@ -70,6 +72,40 @@ def answer(model, tok, qs: list[dict], batch: int, max_new: int) -> list[dict]:
     return out
 
 
+DENSE = {"gemma4_12b": "google/gemma-4-12B-it", "gemma4_e4b": "google/gemma-4-E4B-it"}
+
+
+def log_memory(name: str) -> None:
+    """GPU memory held by the weights of this configuration (before any activations)."""
+    torch.cuda.synchronize()
+    mem_path = OUT / "memory.json"
+    mem = json.loads(mem_path.read_text(encoding="utf-8")) if mem_path.exists() else {}
+    mem[name] = round(torch.cuda.memory_allocated() / 1e9, 2)
+    mem_path.write_text(json.dumps(mem, indent=1), encoding="utf-8")
+
+
+def run_dense(cfg: str, qs: list[dict], args) -> None:
+    from eval_dense_quant import load
+    from transformers import AutoTokenizer
+
+    path = OUT / f"answers_{cfg}.jsonl"
+    done = {json.loads(l)["id"] for l in path.read_text(encoding="utf-8").splitlines()} if path.exists() else set()
+    todo = [q for q in qs if q["id"] not in done][: args.limit]
+    if not todo:
+        return
+    print(f"=== {cfg}: {len(todo)} questions", flush=True)
+    model, _ple, _ = load(DENSE[cfg], bf16=False, quant_embed=True)
+    tok = AutoTokenizer.from_pretrained(DENSE[cfg])
+    tok.padding_side = "left"
+    log_memory(cfg)
+    res = answer(model, tok, todo, args.batch, args.max_new)
+    with path.open("a", encoding="utf-8") as f:
+        for r in res:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    del model
+    torch.cuda.empty_cache()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--per-domain", type=int, default=30)
@@ -77,9 +113,15 @@ def main() -> None:
     ap.add_argument("--budget", type=int, default=51)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--max-new", type=int, default=320)
+    ap.add_argument("--limit", type=int, default=None, help="dense configs only: answer at most N questions (smoke test)")
     args = ap.parse_args()
 
     qs = questions(args.per_domain)
+    for cfg in [c for c in args.configs if c in DENSE]:
+        run_dense(cfg, qs, args)
+    args.configs = [c for c in args.configs if c not in DENSE]
+    if not args.configs:
+        return
     store = ExpertStore.from_packs([ROOT / "quant" / f"{n}.safetensors" for n in ("base", "medicine", "law", "math", "rest")])
     model, tok, _ = load_resident([ROOT / "quant" / "base.safetensors"], quant_dense=True, quant_embed=True)
     model.eval()
@@ -106,12 +148,8 @@ def main() -> None:
                 continue
             if cfg == "own":
                 store.install(model, base | pack_mask(prof(d), base, n / 128))
-            if cfg != "full":  # weights resident on the GPU for this configuration (before any activations)
-                torch.cuda.synchronize()
-                mem_path = OUT / "memory.json"
-                mem = json.loads(mem_path.read_text(encoding="utf-8")) if mem_path.exists() else {}
-                mem[name] = round(torch.cuda.memory_allocated() / 1e9, 2)
-                mem_path.write_text(json.dumps(mem, indent=1), encoding="utf-8")
+            if cfg != "full":
+                log_memory(name)
             res = answer(model, tok, group, args.batch, args.max_new)
             with path.open("a", encoding="utf-8") as f:
                 for r in res:

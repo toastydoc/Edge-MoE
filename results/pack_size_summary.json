@@ -53,6 +53,15 @@
    "measured": true
   }
  ],
+ "gemma4_12b": {
+  "name": "Gemma 4 12B (dense)",
+  "weights_gb": 6.74,
+  "win_or_tie": 0.477,
+  "ci": [
+   0.42,
+   0.537
+  ]
+ },
  "full_weights_gb": 14.24,
  "gb_per_expert_per_layer": 0.1
 }

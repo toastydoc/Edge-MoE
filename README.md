@@ -19,7 +19,7 @@ The finding itself holds: each domain has a stable routing fingerprint, and choo
 
 **Roadmap, in order.**
 
-1. **Against the model that already fits.** The full 26B cannot run on the target devices, so the fair opponent is the best model of the same footprint, Gemma 4 12B (7.5 GB). Blind-judged head-to-head on the same 300 questions, packs at 51 and 64 experts per layer. *Running.*
+1. **Against the model that already fits.** The full 26B cannot run on the target devices, so the fair opponent is the best model of the same footprint, Gemma 4 12B (7.5 GB). Blind-judged head-to-head on the same 300 questions, packs at 51 and 64 experts per layer. *Done: at equal memory the 12B is better; with 1.1 GB more, the 64-per-layer pack beats it (results below).*
 2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try.
 3. **How narrow, how small.** Does a narrower purpose (one regulation title rather than "law") need a smaller pack for the same quality? And since most losses so far are forgotten long-tail facts, do tasks that supply the facts in the prompt lose far less? The eCFR citation results below (right value 100%, right section 98% at 8 GB) suggest yes.
 
@@ -162,6 +162,20 @@ This revises the claim above. On these questions an 8 GB expert pack is a clearl
 
 \*Weight memory (4-bit weights resident on the GPU, before activations) was measured at 64, 80 and 96; every expert is the same size (0.10 GB per expert per layer across 30 layers), so 51 and 128 lie on the same line. The judge's two orders agreed on 78–84% of questions. Answers running to the 320-token limit, mostly repetition loops, fall from 37 at 51 per layer to 9, 3 and none at 96. Going from 51 to 96 experts per layer adds 4.5 GB and cuts the full model's wins from 188 to 69; at 96 per layer a domain's pack holds 75% of the experts and 77% of its answers are as good as or better than the full model's, so most of the quality returns well before the whole model does. `results/pack_size_summary.json`, `scripts/run_pack_sizes.ps1`.
 
+**Against the model that already fits: Gemma 4 12B.** On a device that cannot hold the 26B, the real choice is between a pack and the best dense model of the same size. Gemma 4 12B, 4-bit the same way, holds 6.74 GB of weights on the GPU, about the same as the 51-per-layer pack (~6.5 GB). It answered the same 300 questions, judged the same way:
+
+| Head-to-head | GPU weights | First wins | Ties | Second wins | First wins or ties (95% interval) |
+|---|---|---|---|---|---|
+| Own pack, 51/layer vs Gemma 4 12B | ~6.5 vs 6.7 GB | 70 | 92 | **138** | 54% [48%, 59%] |
+| Own pack, 64/layer vs Gemma 4 12B | 7.8 vs 6.7 GB | **105** | 117 | 78 | **74%** [69%, 79%] |
+| Gemma 4 12B vs full 26B | 6.7 vs ~14.2 GB | 31 | 112 | 157 | 48% [42%, 53%] |
+
+- **At equal memory the 12B is the better answerer.** Against the 51-per-layer pack it wins twice as often as it loses (138 to 70).
+- **About 1.1 GB more turns it around.** The 64-per-layer pack beats the 12B 105 to 78, and leads or ties in all ten domains (narrowest: economics 7–8, philosophy 7–7). On the curve above the 12B sits between the two pack sizes (48% against the full model, vs 37% and 53%).
+- **The pack is also the faster model.** It computes about 4B active parameters per token against the 12B's 12B; in this prototype that was 5.1 vs 3.2 tokens per second at 8 GB (policy table above).
+
+So for this use case the pack is not a free win at the smallest size, but there is a real window: from roughly 7.8 GB of weights, a 26B expert pack answers in-domain questions better and faster than the dense model that fits the same device. Verdicts: `results/judge/verdicts_*gemma4_12b*.jsonl`; `scripts/run_vs_12b.ps1`.
+
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
@@ -202,6 +216,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Paper figures (PDF, SVG, 300 dpi PNG) | `scripts/make_paper_figures.py` → `figures/` |
 | Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
 | Pack-size curve (64, 80, 96 per layer) | `scripts/run_pack_sizes.ps1` (`gen_judge_answers.py --budget N`), then `scripts/make_paper_figures.py` |
+| Head-to-head against Gemma 4 12B | `scripts/run_vs_12b.ps1` (`gen_judge_answers.py --configs gemma4_12b`) |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
