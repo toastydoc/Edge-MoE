@@ -6,14 +6,24 @@
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
 
-**Terms.** An *expert pack* is the set of experts one domain (or a few domains together) uses most, loaded on top of the *base plate* (shown as the "shared core" in the maps). The method is domain-scoped expert loading: in the literature's terms, domain-specific expert pruning without retraining, made reversible and swappable. It is not compression (no weight is changed) and not offloading (experts outside the pack are not reachable while it is loaded).
+**Terms.**
+
+| Term | Meaning |
+|---|---|
+| **Routing fingerprint** | The measured pattern of which experts the router sends a domain's text to, per layer. |
+| **Shared core** | Attention, embeddings, all routers, and the experts general text uses most; installed for every domain. |
+| **Expert pack** | A domain's most used experts outside the shared core, loaded on top of it. |
+| **Pack budget** | How many experts per layer are installed in total (shared core + pack); 51 of 128 fits 8 GB. |
+| **Shared pack** | One pack built for several domains together, within the same budget. |
+
+The method, fingerprint-guided expert selection, is in the literature's terms domain-specific expert pruning without retraining, made reversible and swappable. It is not compression (no weight is changed) and not offloading (experts outside the pack are not reachable while it is loaded).
 
 The model is `google/gemma-4-26B-A4B-it`, which has 30 layers of 128 experts and routes each token to 8 of them. It is split into:
 
-- **Base plate:** attention, embeddings, all routers, plus the experts that general text uses most (10–20% per layer).
-- **Expert packs (medicine, law, math, and more below):** the experts that domain uses most and that are not already in the base. Packs stack, and an expert shared by two packs is loaded once.
+- **Shared core:** attention, embeddings, all routers, plus the experts that general text uses most (10–20% per layer).
+- **Expert packs (medicine, law, math, and more below):** the experts that domain uses most and that are not already in the shared core. Packs stack, and an expert shared by two packs is loaded once.
 - **Routers restricted to installed experts:** each router picks its top 8 among the experts present. Installing a pack only adds experts.
-- **Pack selector ("gate"):** a small logistic regression over the base plate's hidden states. It picks a pack before any pack is loaded. When it fires for a domain with no pack installed, that is a missing-module signal: the device can fetch the pack or defer to an online service.
+- **Pack selector ("gate"):** a small logistic regression over the shared core's hidden states. It picks a pack before any pack is loaded. When it fires for a domain with no pack installed, that is a missing-module signal: the device can fetch the pack or defer to an online service.
 
 All weights are 4-bit (symmetric round-to-nearest, groups of 32, bf16 scales), and the dense baselines get exactly the same treatment. The tests ran on an RTX 5080 16 GB with a Ryzen 7 9700X and 32 GB RAM, under Windows 11.
 
@@ -23,10 +33,10 @@ All weights are 4-bit (symmetric round-to-nearest, groups of 32, bf16 scales), a
 
 | Option | Peak VRAM | law | math | Average of 5 domains | Speed |
 |---|---|---|---|---|---|
-| 26B base + 40% law pack | 7.1 GB | .655 | .305 | 49.7 | 3–5 tok/s |
-| 26B base + 40% math pack | 7.1 GB | .605 | .590 | 60.8 | 3–5 tok/s |
-| 26B base + full expert pack | 8.5 GB | .705–.750 | .680–.700 | — | 3–5 tok/s |
-| 26B base + three packs | 10.5 GB | .770 | .645 | 75.0 | about 5 tok/s |
+| 26B shared core + 40% law pack | 7.1 GB | .655 | .305 | 49.7 | 3–5 tok/s |
+| 26B shared core + 40% math pack | 7.1 GB | .605 | .590 | 60.8 | 3–5 tok/s |
+| 26B shared core + full expert pack | 8.5 GB | .705–.750 | .680–.700 | — | 3–5 tok/s |
+| 26B shared core + three packs | 10.5 GB | .770 | .645 | 75.0 | about 5 tok/s |
 | Full 26B | 14.9 GB | .775 | .660 | 79.3 | — |
 | Gemma 4 12B | 7.5 GB | .730 | .565 | 70.3 | 3.2 tok/s |
 | Gemma 3 12B | 7.5 GB | .655 | .465 | 67.2 | 3.3 tok/s |
@@ -41,15 +51,15 @@ The tasks are 50 extract (list the authorities a section cites), 50 cite (fill a
 | Configuration (8 GB unless noted) | Extract F1 | Cite value / right section | Reconcile | Peak GPU (in use / reserved) | First token, 2k / 8k | Decode | 32k prompt |
 |---|---|---|---|---|---|---|---|
 | Gemma 4 12B (dense) | .59 | .98 / .90 | **1.00** | 8.3 / 9.2 GB | 1.4 / 4.5 s | 3.2 tok/s | 25 s |
-| Base + law pack (from MMLU law) | .39 | 1.00 / .78 | .68 | 7.7 / 8.5 GB | 1.7 / 5.9 s | 5.0 tok/s | 30 s |
-| **Base + regulation pack** (non-test CFR titles) | .57 | 1.00 / **.98** | .73 | 7.7 / 8.5 GB | 1.7 / 6.0 s | 5.1 tok/s | 30 s |
-| Base + regulation and math, shared budget | .55 | 1.00 / .98 | .73 | 7.7 / 8.5 GB | 1.6 / 5.8 s | 5.1 tok/s | 27 s |
-| Base + reconcile pack (version-comparison prompts) | .55 | 1.00 / 1.00 | .82 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 26 s |
-| Base + regulation and reconcile, shared budget | .46 | 1.00 / 1.00 | .86 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 27 s |
+| Shared core + law pack (from MMLU law) | .39 | 1.00 / .78 | .68 | 7.7 / 8.5 GB | 1.7 / 5.9 s | 5.0 tok/s | 30 s |
+| **Shared core + regulation pack** (non-test CFR titles) | .57 | 1.00 / **.98** | .73 | 7.7 / 8.5 GB | 1.7 / 6.0 s | 5.1 tok/s | 30 s |
+| Shared core + regulation and math, shared budget | .55 | 1.00 / .98 | .73 | 7.7 / 8.5 GB | 1.6 / 5.8 s | 5.1 tok/s | 27 s |
+| Shared core + reconcile pack (version-comparison prompts) | .55 | 1.00 / 1.00 | .82 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 26 s |
+| Shared core + regulation and reconcile, shared budget | .46 | 1.00 / 1.00 | .86 | 7.7 / 8.5 GB | 1.6 / 5.4 s | 5.5 tok/s | 27 s |
 | One trimmed model for all five domains | .51 | .98 / .92 | .91 | 7.7 / 8.5 GB | 1.6 / 5.6 s | 5.4 tok/s | 27 s |
 | Per-prompt plan (router picks the 51) | .56 | 1.00 / .98 | .73 | 7.7 / 8.4 GB | 3.6 / 7.5 s | 5.5 tok/s | 26 s |
 | **Expert offloading** (all 128 reachable from RAM, 51 cached) | **.77** | 1.00 / .98 | **1.00** | 7.7 / 8.5 GB | 3.1 / 11.2 s | 5.4 tok/s | 57 s |
-| Base + three packs (11 GB, over the limit) | .66 | 1.00 / 1.00 | 1.00 | 11.0 / 11.8 GB | 2.1 / 7.9 s | 5.2 tok/s | 37 s |
+| Shared core + three packs (11 GB, over the limit) | .66 | 1.00 / 1.00 | 1.00 | 11.0 / 11.8 GB | 2.1 / 7.9 s | 5.2 tok/s | 37 s |
 
 Paired comparisons on the same tasks (bootstrap 95% intervals), against the regulation pack:
 
@@ -64,19 +74,19 @@ Paired comparisons on the same tasks (bootstrap 95% intervals), against the regu
 
 An earlier 63-task run (law packs only, no limit) is kept in `results/policy_*.json` without the `_tasks_v2` suffix.
 
-### Ten domains from Wikipedia: fingerprints, packs and the break-even point
+### Ten domains from Wikipedia: routing fingerprints, expert packs and the break-even point
 
 Ten more domains (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy) were built from Wikipedia article introductions: five categories per domain, articles found under two domains dropped from both, then split by article into 249–300 profiling articles and 83–100 held-out test articles per domain. One source for all ten keeps the comparison about topic, not writing style.
 
-**Each domain has a stable expert fingerprint.** A pack chosen from one half of a domain's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other domains' packs. Computer science is the most distinct (41% overlap with the rest).
+**Each domain has a stable routing fingerprint.** A pack chosen from one half of a domain's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other domains' packs. Computer science is the most distinct (41% overlap with the rest).
 
-![Expert fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
+![Routing fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
 
-*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which domains favour them. Coloured: the domain's 25-expert pack per layer; grey: the shared base plate. Line weight and dot size follow the expert's share of that layer's routing.*
+*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which domains favour them. Coloured: the domain's 25-expert pack per layer; grey: the shared core. Line weight and dot size follow the expert's share of that layer's routing.*
 
 **Packs recover most of what trimming loses, and choosing the experts is what does it.** Loss is next-token cross-entropy on the held-out introductions, scored as the model's reply to *"Write the Wikipedia introduction for the article <title>"* (Gemma 4 instruct degenerates on bare text outside a chat turn). Extra loss over the full 128-expert model, nats per token, all at 51 experts per layer:
 
-| Domain | Full model | Base plate alone | Base + 25 random | **Own pack** | Best other pack |
+| Domain | Full model | Shared core alone | Shared core + 25 random | **Own pack** | Best other pack |
 |---|---|---|---|---|---|
 | art | 3.37 | +1.33 | +0.69 | **+0.24** | history +0.29 |
 | history | 3.05 | +1.64 | +0.94 | **+0.23** | art +0.36 |
@@ -90,29 +100,29 @@ Ten more domains (art, history, biology, geology, politics, computer science, ec
 | philosophy | 3.29 | +0.90 | +0.40 | +0.19 | **history +0.17** |
 | **mean** | 3.16 | +1.11 | +0.56 | **+0.15** | +0.21 |
 
-The own pack recovers 86% of the gap between the base plate and the full model; random experts recover 49%. The remaining +0.15 nats is about 16% higher perplexity than the full model. Packs act more like neighbourhoods than single subjects: related domains swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text.
+The own pack recovers 86% of the gap between the shared core and the full model; random experts recover 49%. The remaining +0.15 nats is about 16% higher perplexity than the full model. Packs act more like neighbourhoods than single subjects: related domains swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text.
 
 ![Quality at 51 experts per layer, and the break-even curve](figures/fig2_quality.png)
 
-**Break-even: one fixed model for k domains.** Base plate plus the experts k domains use most, still 51 per layer, scored on its own k domains (3 random domain sets per k, 1 for k = 10):
+**Break-even: one shared pack for k domains.** Shared core plus the experts k domains use most, still 51 per layer, scored on its own k domains (3 random domain sets per k, 1 for k = 10):
 
 | Domains served | 1 (own pack) | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
 |---|---|---|---|---|---|---|---|---|
 | Extra loss (nats/token) | +0.153 | +0.156 | +0.192 | +0.239 | +0.218 | +0.203 | +0.240 | +0.246 |
 | Share of the pack's gain over random kept | 100% | 99% | 91% | 79% | 84% | 88% | 79% | 77% |
 
-Two domains share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one fixed model for all ten keeps about three quarters of a dedicated pack's gain. Swapping per domain is worth about 0.09 nats per token over that. The bumps between k = 4 and 6 are within the spread of the three sets.
+Two domains share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one shared pack for all ten keeps about three quarters of a dedicated pack's gain. Swapping per domain is worth about 0.09 nats per token over that. The bumps between k = 4 and 6 are within the spread of the three sets.
 
 **What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over all 15 domains) recorded which tokens each expert receives. In layers 1–2 and again in the last three layers, token type (numbers, punctuation, word starts) explains more of the choice of expert than the domain does; in layers 3–27 the domain explains more (mean share of expert-choice entropy: domain 5.6 / 6.3 / 5.1% in layers 1–10 / 11–20 / 21–30, token type 4.2 / 1.9 / 2.4%). Neither explains most of it. The two measures have different numbers of categories (15 and 6), so they are not directly comparable without a shuffled baseline.
 
 **Domain maps** ([open the interactive maps](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html), also on [Claude.ai](https://claude.ai/artifact/RCQaEJswZb8Pbj3Q5oPtYM); source `viz/domain_maps.html`) draw each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in numbered slots (optionally grouped by domain preference, the layout used in the figure above), the shared core in white and the pack in the domain's colour. Switch between the full model (every expert the domain's text reaches) and the 8 GB expert pack, select up to three domains to see them share one pack, and read the trade-off beside the map: GPU memory −48% (7.7 GB vs 14.9 GB), experts on the GPU −60%, and the measured quality cost for that selection. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
 
-**Blind-judged answers: the quality cost is not negligible.** Loss measures surprise at real text, not answer quality, so 300 questions written from the held-out articles (30 per domain, *"In geology, what is Hyaloclastite? Explain it in one paragraph"*, `results/judge/questions.jsonl`) were answered greedily by the full model, each domain's own pack, and one fixed model for all ten, all at the same 4-bit weights. Gemini 3.1 Pro judged each pair blind, in both orders; a win counts only when both orders agree (they agreed on 87–92%).
+**Blind-judged answers: the quality cost is not negligible.** Loss measures surprise at real text, not answer quality, so 300 questions written from the held-out articles (30 per domain, *"In geology, what is Hyaloclastite? Explain it in one paragraph"*, `results/judge/questions.jsonl`) were answered greedily by the full model, each domain's own pack, and one shared pack for all ten, all at the same 4-bit weights. Gemini 3.1 Pro judged each pair blind, in both orders; a win counts only when both orders agree (they agreed on 87–92%).
 
 | Against the full model | Pack wins | Ties | Full model wins | Pack wins or ties (95% interval) |
 |---|---|---|---|---|
 | Each domain's own expert pack | 22 | 90 | 188 | **37%** [32%, 43%] |
-| One fixed pack for all ten domains | 13 | 72 | 215 | **28%** [23%, 33%] |
+| One shared pack for all ten domains | 13 | 72 | 215 | **28%** [23%, 33%] |
 
 By domain the own pack ranges from 20% (politics) to 50% (philosophy). Two things go wrong:
 
@@ -135,7 +145,7 @@ This revises the claim above. On these questions an 8 GB expert pack is a clearl
 
 ## Prior work
 
-Expert pruning and skipping without retraining: Lu et al., "Not All Experts are Equal: Efficient Expert Pruning and Skipping for Mixture-of-Experts Large Language Models" (ACL 2024), and work on task-specific expert pruning. What this project adds is the packaging: one shared base plate, stackable expert packs, a pack selector that runs on the base alone, and the missing-pack signal.
+Expert pruning and skipping without retraining: Lu et al., "Not All Experts are Equal: Efficient Expert Pruning and Skipping for Mixture-of-Experts Large Language Models" (ACL 2024), and work on task-specific expert pruning. What this project adds is the packaging: one shared core, stackable expert packs, a pack selector that runs on the base alone, and the missing-pack signal.
 
 ## Reproducing
 
@@ -145,7 +155,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 |---|---|
 | Build prompt sets and test sets | `scripts/build_datasets.py`, `scripts/build_base_prompts.py` |
 | Profile expert use per domain | `scripts/profile_domain.py` |
-| Choose base plate and packs | `scripts/build_expert_packs.py`, `scripts/build_small_packs.py` |
+| Choose shared core and packs | `scripts/build_expert_packs.py`, `scripts/build_small_packs.py` |
 | Train pack selectors | `scripts/train_expert_gates.py` |
 | Write 4-bit pack files | `scripts/quant_packs.py` |
 | Score the 26B from packs on MMLU | `scripts/eval_quant.py --quant-dense --quant-embed` |

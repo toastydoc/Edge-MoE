@@ -3,9 +3,9 @@
     python scripts/make_paper_figures.py
 
 Writes to figures/:
-    fig1_fingerprints   radial expert maps of the ten Wikipedia domains (pack experts in colour, base plate grey)
+    fig1_fingerprints   radial expert maps of the ten Wikipedia domains (pack experts in colour, shared core grey)
     fig1_fingerprints_dark   the same on a dark field, for slides and covers
-    fig2_quality        (a) extra loss per domain for base plate / random / own pack / best other pack,
+    fig2_quality        (a) extra loss per domain for shared core / random / own pack / best other pack,
                         (b) break-even: one fixed 51-expert model shared by k domains
     fig3_routing        what the router's choice tracks, per layer: domain vs token type
 
@@ -59,7 +59,7 @@ def save(fig, name: str) -> None:
 
 
 def radial(ax, data: dict, dom: dict, dark: bool) -> None:
-    """One domain's map: router at the centre, layers as rings, pack experts in colour, base plate grey."""
+    """One domain's map: router at the centre, layers as rings, pack experts in colour, shared core grey."""
     L, E = data["layers"], data["experts"]
     slot, base = np.array(data["slot"]), [set(b) for b in data["base"]]
     a0 = data["domains"][0]["anchor"]
@@ -130,7 +130,7 @@ def fig2() -> None:
     fig, (a, b) = plt.subplots(1, 2, figsize=(7.2, 3.2), gridspec_kw={"width_ratios": [1.35, 1]})
     order = sorted(WIKI, key=lambda d: packs[d]["own"])
     y = np.arange(len(order))
-    series = [("base", "Base plate alone", (0.70, 0.71, 0.74)), ("random", "Base + 25 random", (0.85, 0.55, 0.35)),
+    series = [("base", "Shared core alone", (0.70, 0.71, 0.74)), ("random", "Shared core + 25 random", (0.85, 0.55, 0.35)),
               ("best_other_excess", "Best other domain's pack", (0.45, 0.62, 0.85)), ("own", "Own pack", (0.13, 0.42, 0.62))]  # fmt: skip
     h = 0.2
     for i, (k, lab, c) in enumerate(series):
@@ -143,17 +143,17 @@ def fig2() -> None:
 
     runs = {int(k): v for k, v in be["runs"].items()}
     ks = sorted(runs)
-    b.axhline(be["random"], ls=":", lw=0.9, color=(0.85, 0.55, 0.35), label="Base + 25 random")
+    b.axhline(be["random"], ls=":", lw=0.9, color=(0.85, 0.55, 0.35), label="Shared core + 25 random")
     b.axhline(be["own"], ls="--", lw=0.9, color=(0.13, 0.42, 0.62), label="Each domain's own pack")
     for k in ks:
         b.scatter([k] * len(runs[k]), runs[k], s=9, color=(0.55, 0.57, 0.62), lw=0, zorder=2)
     b.plot([1] + ks, [be["own"]] + [float(np.mean(runs[k])) for k in ks], "o-", ms=3.2, lw=1.1, color="black",
-           label="One fixed model for k domains", zorder=3)  # fmt: skip
+           label="One shared pack for k domains", zorder=3)  # fmt: skip
     b.set_xticks([1] + ks)
     b.set_ylim(0, be["random"] * 1.12)
-    b.set_xlabel("Domains served by one 51-expert/layer model (k)")
+    b.set_xlabel("Domains served by one shared pack, 51 experts/layer (k)")
     b.set_ylabel("Extra loss vs full model (nats / token)")
-    b.set_title("(b) Break-even: sharing one model across domains", loc="left")
+    b.set_title("(b) Break-even: one shared pack for k domains", loc="left")
     b.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=1)
     fig.tight_layout(w_pad=1.5)
     save(fig, "fig2_quality")

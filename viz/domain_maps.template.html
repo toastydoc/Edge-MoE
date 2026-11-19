@@ -87,7 +87,7 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
     <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts · expert packs</div>
     <h1>Where the router sends each domain</h1>
     <p class="proj"><a href="https://github.com/toastydoc/Modularized_Local_LLM-">Code, data and results on GitHub →</a></p>
-    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a domain's text is routed to, layer by layer. Compare what the full model uses with what an 8 GB expert pack keeps, for one domain or up to three sharing one pack.</p>
+    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a domain's text is routed to, layer by layer: its routing fingerprint. Compare what the full model uses with what an 8 GB expert pack keeps, for one domain or up to three in a shared pack.</p>
   </header>
 
   <section class="stage">
@@ -112,7 +112,7 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
       </div>
 
       <div>
-        <p class="sec-label">Trade-off at 51 experts per layer</p>
+        <p class="sec-label">Trade-off at a pack budget of 51 experts per layer</p>
         <div class="trade">
           <div class="cell"><b class="gain" id="mGpu">−48%</b><span id="mGpuTxt">GPU memory: 7.7 GB instead of 14.9 GB</span></div>
           <div class="cell"><b class="gain">−60%</b><span>experts on the GPU: 51 of 128 per layer</span></div>
@@ -132,12 +132,12 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
   </section>
 
   <section>
-    <p class="sec-label">Domains · select up to three to share one pack · <span id="progress"></span></p>
+    <p class="sec-label">Domains · select up to three for a shared pack · <span id="progress"></span></p>
     <div class="grid" id="grid"></div>
   </section>
 
   <footer>
-    <p>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. An expert pack holds a domain's most used experts outside the shared core, up to 51 per layer in total. Several domains share one pack by taking the experts they use most together, still 51 per layer.</p>
+    <p>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. An expert pack holds a domain's most used experts outside the shared core, up to 51 per layer in total. A shared pack serves several domains by taking the experts they use most together, within the same budget of 51 per layer.</p>
     <p>Quality cost is extra next-token loss on each domain's held-out Wikipedia text versus the full model; for two or three domains it is the average measured over random sets of that size, not for this exact combination. Memory is peak GPU memory in use. The bolts between layers are drawn for legibility: the router does not pass tokens from one particular expert to another.</p>
     <p>Project, method and full results: <a href="https://github.com/toastydoc/Modularized_Local_LLM-">github.com/toastydoc/Modularized_Local_LLM-</a></p>
   </footer>
@@ -342,7 +342,7 @@ const pct = x => (x >= 0 ? "+" : "") + Math.round(x * 100) + "%";
 function readout() {
   const ds = sel.map(i => doms[i]);
   document.getElementById("dName").innerHTML = ds.map(d => `<span style="color:${col(d, 1, 70)}">${d.label}</span>`).join(" + ") || "—";
-  document.getElementById("dSrc").textContent = ds.length > 1 ? `${ds.length} domains sharing one 51-expert pack` : ds.length ? ds[0].source : "";
+  document.getElementById("dSrc").textContent = ds.length > 1 ? `${ds.length} domains in one shared pack, 51 experts per layer` : ds.length ? ds[0].source : "";
   // routing kept: share of each selected domain's routing on the installed experts, averaged
   const inst = installed(ds);
   let mass = 0;
