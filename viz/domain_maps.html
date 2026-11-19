@@ -84,12 +84,17 @@ h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(28px, 4vw
 .card[disabled] { cursor: default; }
 footer { color: var(--dim); font-size: 13px; max-width: 82ch; border-top: 1px solid var(--hair); padding-top: 14px; display: grid; gap: 8px; }
 footer p { margin: 0; }
+a { color: var(--rim); text-underline-offset: 3px; }
+a:hover { color: var(--ink); }
+a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
+.proj { margin: 0; font-family: var(--f-data); font-size: 13px; }
 </style>
 
 <div class="wrap">
   <header>
     <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts · expert packs</div>
     <h1>Where the router sends each domain</h1>
+    <p class="proj"><a href="https://github.com/toastydoc/Modularized_Local_LLM-">Code, data and results on GitHub →</a></p>
     <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a domain's text is routed to, layer by layer. Compare what the full model uses with what an 8 GB expert pack keeps, for one domain or up to three sharing one pack.</p>
   </header>
 
@@ -142,6 +147,7 @@ footer p { margin: 0; }
   <footer>
     <p>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. An expert pack holds a domain's most used experts outside the shared core, up to 51 per layer in total. Several domains share one pack by taking the experts they use most together, still 51 per layer.</p>
     <p>Quality cost is extra next-token loss on each domain's held-out Wikipedia text versus the full model; for two or three domains it is the average measured over random sets of that size, not for this exact combination. Memory is peak GPU memory in use. The bolts between layers are drawn for legibility: the router does not pass tokens from one particular expert to another.</p>
+    <p>Project, method and full results: <a href="https://github.com/toastydoc/Modularized_Local_LLM-">github.com/toastydoc/Modularized_Local_LLM-</a></p>
   </footer>
 </div>
 
