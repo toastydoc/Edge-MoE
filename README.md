@@ -1,5 +1,7 @@
 # Edge-MoE: expert packs for a mixture-of-experts model
 
+**[Explore the interactive domain maps →](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html)** Which of the model's 3,840 experts each subject uses, the full model against an 8 GB expert pack, and what the trade costs.
+
 **Research question.** Can an existing mixture-of-experts model be repackaged, without retraining its weights, so that one shared base and a user-selected expert pack deliver competitive answer quality on an 8 GB consumer GPU?
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
