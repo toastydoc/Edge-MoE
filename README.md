@@ -60,6 +60,45 @@ Paired comparisons on the same tasks (bootstrap 95% intervals), against the regu
 
 An earlier 63-task run (law packs only, no limit) is kept in `results/policy_*.json` without the `_tasks_v2` suffix.
 
+### Ten domains from Wikipedia: fingerprints, packs and the break-even point
+
+Ten more domains (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy) were built from Wikipedia article introductions: five categories per domain, articles found under two domains dropped from both, then split by article into 249–300 profiling articles and 83–100 held-out test articles per domain. One source for all ten keeps the comparison about topic, not writing style.
+
+**Each domain has a stable expert fingerprint.** A pack chosen from one half of a domain's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other domains' packs. Computer science is the most distinct (41% overlap with the rest).
+
+**Packs recover most of what trimming loses, and choosing the experts is what does it.** Loss is next-token cross-entropy on the held-out introductions, scored as the model's reply to *"Write the Wikipedia introduction for the article <title>"* (Gemma 4 instruct degenerates on bare text outside a chat turn). Extra loss over the full 128-expert model, nats per token, all at 51 experts per layer:
+
+| Domain | Full model | Base plate alone | Base + 25 random | **Own pack** | Best other pack |
+|---|---|---|---|---|---|
+| art | 3.37 | +1.33 | +0.69 | **+0.24** | history +0.29 |
+| history | 3.05 | +1.64 | +0.94 | **+0.23** | art +0.36 |
+| biology | 3.15 | +0.82 | +0.38 | **+0.06** | chemistry +0.08 |
+| geology | 3.18 | +1.04 | +0.52 | **+0.10** | biology +0.16 |
+| politics | 3.21 | +1.13 | +0.55 | +0.17 | **history +0.16** |
+| computer science | 3.18 | +1.38 | +0.74 | **+0.24** | physics +0.52 |
+| economics | 3.14 | +1.04 | +0.51 | **+0.14** | politics +0.17 |
+| chemistry | 3.06 | +0.89 | +0.43 | **+0.05** | geology +0.11 |
+| physics | 2.96 | +0.94 | +0.46 | **+0.10** | chemistry +0.12 |
+| philosophy | 3.29 | +0.90 | +0.40 | +0.19 | **history +0.17** |
+| **mean** | 3.16 | +1.11 | +0.56 | **+0.15** | +0.21 |
+
+The own pack recovers 86% of the gap between the base plate and the full model; random experts recover 49%. The remaining +0.15 nats is about 16% higher perplexity than the full model. Packs act more like neighbourhoods than single subjects: related domains swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text.
+
+**Break-even: one fixed model for k domains.** Base plate plus the experts k domains use most, still 51 per layer, scored on its own k domains (3 random domain sets per k, 1 for k = 10):
+
+| Domains served | 1 (own pack) | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
+|---|---|---|---|---|---|---|---|---|
+| Extra loss (nats/token) | +0.153 | +0.156 | +0.192 | +0.239 | +0.218 | +0.203 | +0.240 | +0.246 |
+| Share of the pack's gain over random kept | 100% | 99% | 91% | 79% | 84% | 88% | 79% | 77% |
+
+Two domains share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one fixed model for all ten keeps about three quarters of a dedicated pack's gain. Swapping per domain is worth about 0.09 nats per token over that. The bumps between k = 4 and 6 are within the spread of the three sets.
+
+**What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over all 15 domains) recorded which tokens each expert receives. In layer 1, token type (numbers, punctuation, word starts) explains more of the choice of expert than the domain does; from layer 4 on, the domain explains more (mean share of expert-choice entropy: domain 5.6 / 6.3 / 5.1% in layers 1–10 / 11–20 / 21–30, token type 4.2 / 1.9 / 2.4%). Neither explains most of it. The two measures have different numbers of categories (15 and 6), so they are not directly comparable without a shuffled baseline.
+
+**Domain maps.** `viz/domain_maps.html` draws each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in evenly spaced slots placed by which domains favour them, base plate in white and the pack in the domain's colour. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
+
+**Pending: blind-judged answers.** Loss measures surprise at real text, not answer quality. 300 questions written from the held-out articles (30 per domain, `results/judge/questions.jsonl`) are being answered by the full model, each domain's own pack, and one fixed model for all ten, then judged pairwise and blind by Gemini 3.1 Pro (each pair in both orders; a win counts only when both agree). Results will be added here.
+
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
@@ -70,6 +109,7 @@ An earlier 63-task run (law packs only, no limit) is kept in `results/policy_*.j
 - **Long prompts:** the earlier slow 32k prompts (91–152 s) were allocator fragmentation spilling into system RAM; freeing the cache after each prefill chunk fixed it (now 25–37 s, 57 s with offloading).
 - **Offloading uses this prototype's own LRU cache** with pinned RAM, preloaded with the trimmed model's experts. A production offloading runtime would prefetch and could be faster; llama.cpp was not tested.
 - **Reconcile tasks** come only from yearly penalty and threshold updates where a value sits in the paragraph text.
+- **The ten Wikipedia domains** measure loss on encyclopedic prose, not task performance. The loss sweep scored 8 texts at a time, which needs up to 11.2 GB of working memory; the experts installed are the same 51 per layer as at 8 GB. The full-model reference runs through the offloading path, which computes the same output without holding all experts at once.
 
 ## Prior work
 
@@ -92,7 +132,12 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Profile the regulation and reconcile packs | `scripts/build_reg_prompts.py`, `scripts/build_reconcile_prompts.py`, then `scripts/profile_domain.py` |
 | Run the policy tasks | `scripts/eval_policy.py --config ...` |
 | The 8 GB comparison | `scripts/run_8gb_comparison.ps1` (`edge_moe/expert_store.py` holds all configurations) |
+| Ten Wikipedia domains: data, profiles, loss sweep | `scripts/build_wiki_domains.py`, then `scripts/run_domains.ps1` (`scripts/eval_domain_loss.py`) |
+| Expert token pass | `scripts/profile_expert_tokens.py` |
+| Analysis tables | `scripts/analyze_domains.py` |
+| Domain maps | `scripts/export_domain_maps.py` (template in `viz/`) |
+| Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
-Data sources: MMLU (MIT licence), and the eCFR (US federal regulations, public domain). Model weights are subject to the [Gemma terms of use](https://ai.google.dev/gemma/terms); none are redistributed here.
+Data sources: MMLU (MIT licence), the eCFR (US federal regulations, public domain), and Wikipedia article introductions (`data/test/wiki_*.jsonl`, CC BY-SA 4.0, © Wikipedia contributors; each row names its article). Model weights are subject to the [Gemma terms of use](https://ai.google.dev/gemma/terms); none are redistributed here.

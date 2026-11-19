@@ -1,0 +1,362 @@
+<title>Router Domain Maps</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one large field (the selected domain's map) beside its readout, then a constellation grid of every domain. */
+:root {
+  --void: #05070d;          /* page */
+  --deep: #0a0f1c;          /* panels */
+  --rim: #2fd3e8;           /* the circle's edge, as in an instrument scope */
+  --ink: #dfe7f5;           /* text */
+  --dim: #8592ab;           /* secondary text */
+  --hair: #1b2438;          /* rules */
+  --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--void); color: var(--ink); }
+body { font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--f-data); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--rim); }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(28px, 4vw, 42px); line-height: 1.1; margin: 0; text-wrap: balance; }
+.lede { color: var(--dim); max-width: 68ch; margin: 0; }
+.stage { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.field { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; }
+.field canvas { width: 100%; height: 100%; display: block; }
+.tip { position: absolute; pointer-events: none; background: rgba(5,7,13,.92); border: 1px solid var(--hair); padding: 6px 9px;
+  font-family: var(--f-data); font-size: 12px; line-height: 1.45; white-space: nowrap; }
+.readout { display: grid; gap: 20px; min-width: 0; }
+.readout h2 { font-family: var(--f-display); font-weight: 600; font-size: 30px; margin: 0; line-height: 1.1; }
+.src { font-family: var(--f-data); font-size: 12px; color: var(--dim); }
+.figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.fig { border-top: 1px solid var(--hair); padding-top: 8px; }
+.fig b { display: block; font-family: var(--f-data); font-weight: 500; font-size: 22px; font-variant-numeric: tabular-nums; }
+.fig span { font-size: 12px; color: var(--dim); }
+.sec-label { font-family: var(--f-data); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; }
+.bars { display: grid; gap: 5px; }
+.bar { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 3.2em; align-items: center; gap: 10px; font-size: 13px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; padding: 2px 0; cursor: pointer; }
+.bar:hover .nm, .bar:focus-visible .nm { color: var(--ink); }
+.bar:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
+.bar .nm { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .tr { height: 6px; background: var(--hair); position: relative; }
+.bar .tr i { position: absolute; inset: 0 auto 0 0; }
+.bar .v { font-family: var(--f-data); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.tg { font-family: var(--f-data); font-size: 12px; padding: 6px 10px; background: transparent; color: var(--dim);
+  border: 1px solid var(--hair); cursor: pointer; }
+.tg[aria-pressed="true"] { color: var(--ink); border-color: var(--rim); }
+.tg:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
+.key { display: grid; gap: 6px; font-size: 13px; color: var(--dim); margin: 0; padding: 0; list-style: none; }
+.key li { display: flex; gap: 10px; align-items: baseline; }
+.key b { color: var(--ink); font-weight: 500; min-width: 6.5em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.card { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; display: grid; gap: 6px; text-align: center; font: inherit; }
+.card canvas { width: 100%; aspect-ratio: 1; display: block; }
+.card .nm { font-family: var(--f-display); font-weight: 500; font-size: 15px; }
+.card .st { font-family: var(--f-data); font-size: 11px; color: var(--dim); }
+.card[aria-current="true"] .nm { color: var(--rim); }
+.card:focus-visible { outline: 1px solid var(--rim); outline-offset: 4px; }
+.card[disabled] { cursor: default; }
+footer { color: var(--dim); font-size: 13px; max-width: 80ch; border-top: 1px solid var(--hair); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts</div>
+    <h1>Where the router sends each domain</h1>
+    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts. Bolts trace the experts a domain is routed to, layer by layer. Every ring has 128 evenly spaced slots. By default an expert's slot depends on which domains use it more than the others do, so each domain's experts lean toward its own side of the circle; switch to expert-number order to see the raw layout.</p>
+  </header>
+
+  <section class="stage">
+    <div class="field" id="field"><canvas id="big" aria-label="Expert map for the selected domain"></canvas><div class="tip" id="tip" hidden></div></div>
+    <div class="readout">
+      <div>
+        <h2 id="dName">—</h2>
+        <div class="src" id="dSrc"></div>
+      </div>
+      <div class="figs">
+        <div class="fig"><b id="fMass">—</b><span>of its routing lands on the 51 installed experts</span></div>
+        <div class="fig"><b>26</b><span>shared base-plate experts per layer</span></div>
+        <div class="fig"><b>25</b><span>pack experts per layer, its own</span></div>
+      </div>
+      <div class="toggles" role="group" aria-label="What to draw">
+        <button class="tg" id="tAnim" aria-pressed="true">Animate</button>
+        <button class="tg" id="tBase" aria-pressed="true">Base plate</button>
+        <button class="tg" id="tAll" aria-pressed="false" title="Experts it picks when all 128 are available, including those not installed at 51">Every expert it would pick</button>
+        <button class="tg" id="tIdx" aria-pressed="false">Order by expert number</button>
+      </div>
+      <ul class="key">
+        <li><b style="color:var(--rim)">Domain colour</b> its pack: the 25 experts per layer that are only installed for it</li>
+        <li><b>White</b> the base plate, installed for every domain</li>
+        <li><b>Bolt brightness</b> how much of the layer's routing that expert takes</li>
+        <li><b>Animation</b> a strike from the router outward, then a wave through the layers in order, as each token takes; busy experts burn steady, rarely used ones flicker</li>
+      </ul>
+      <div>
+        <p class="sec-label">Pack experts shared with</p>
+        <div class="bars" id="bars"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label">All domains · <span id="progress"></span></p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <footer>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. A pack is the domain's most used experts outside the base plate, up to 51 per layer. Domains marked "mapping" are still being profiled; the page is regenerated as each one finishes.</footer>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const L = DATA.layers, E = DATA.experts;
+const doms = DATA.domains;
+const hue = d => Math.round(((d.anchor + Math.PI / 2) / (2 * Math.PI)) * 360 + 360) % 360;
+const col = (d, a, light = 62) => `hsla(${hue(d)}, 95%, ${light}%, ${a})`;
+const baseSet = DATA.base.map(ids => new Set(ids));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let opts = { base: true, all: false, byIndex: false };
+// Every layer's 128 experts sit in 128 evenly spaced slots; the order within the ring is either by domain affinity or by expert number.
+const angOf = (l, e) => ((opts.byIndex ? e : DATA.slot[l][e]) / E) * 2 * Math.PI + doms[0].anchor;
+
+// Seeded jitter so each bolt keeps its shape between redraws.
+function rnd(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+
+function nodes(d) {
+  // Lit experts per layer: the installed set (base + pack), or everything with real use.
+  const out = [];
+  for (let l = 0; l < L; l++) {
+    const sh = d.share[l], mx = Math.max(...sh);
+    const pack = new Set(d.pack[l]);
+    const row = [];
+    for (let e = 0; e < E; e++) {
+      const isBase = baseSet[l].has(e), isPack = pack.has(e);
+      const lit = opts.all ? sh[e] > 40 : (isPack || (opts.base && isBase));
+      if (!lit || (!opts.base && isBase)) continue;
+      row.push({ l, e, s: sh[e] / 1e4, v: sh[e] / mx, kind: isPack ? "pack" : isBase ? "base" : "other",
+        a: angOf(l, e) });
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+function geom(size) { const R = size * 0.46; return { c: size / 2, R, r0: R * 0.09 }; }
+const rad = (g, l) => g.r0 + (g.R - g.r0) * (l + 0.6) / L;
+const pos = (g, n) => [g.c + Math.cos(n.a) * rad(g, n.l), g.c + Math.sin(n.a) * rad(g, n.l)];
+const angDist = (a, b) => { const x = Math.abs(a - b) % (2 * Math.PI); return Math.min(x, 2 * Math.PI - x); };
+
+// A scene is built once per domain/toggle change; render() repaints it, statically (t = null) or at time t (seconds).
+function build(canvas, d, big) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const size = canvas.clientWidth;
+  canvas.width = canvas.height = Math.round(size * dpr);
+  const g = geom(size);
+  // Static backdrop: field, layer rings, every expert slot, rim. Drawn once to an offscreen canvas.
+  const bgc = document.createElement("canvas"); bgc.width = bgc.height = canvas.width;
+  const b = bgc.getContext("2d"); b.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const grad = b.createRadialGradient(g.c, g.c, 0, g.c, g.c, g.R * 1.1);
+  grad.addColorStop(0, "#0b1222"); grad.addColorStop(1, "#04060b");
+  b.fillStyle = grad; b.beginPath(); b.arc(g.c, g.c, g.R * 1.04, 0, 7); b.fill();
+  if (big) for (let l = 0; l < L; l++) {
+    b.strokeStyle = l % 5 === 4 ? "rgba(120,160,220,.10)" : "rgba(120,160,220,.035)";
+    b.lineWidth = 1; b.beginPath(); b.arc(g.c, g.c, rad(g, l), 0, 7); b.stroke();
+  }
+  b.fillStyle = big ? "rgba(150,180,230,.28)" : "rgba(150,180,230,.16)";
+  const dotR = big ? Math.max(0.6, size / 900) : 0.45;
+  for (let l = 0; l < L; l++) { const r = rad(g, l); for (let e = 0; e < E; e++) {
+    const a = (e / E) * 2 * Math.PI; b.fillRect(g.c + Math.cos(a) * r - dotR, g.c + Math.sin(a) * r - dotR, dotR * 2, dotR * 2);
+  } }
+  b.save(); b.shadowColor = "rgba(47,211,232,.9)"; b.shadowBlur = big ? 18 : 8;
+  b.strokeStyle = "rgba(47,211,232,.85)"; b.lineWidth = big ? 2.2 : 1.4;
+  b.beginPath(); b.arc(g.c, g.c, g.R * 1.04, 0, 7); b.stroke(); b.restore();
+  if (!d.ready) {
+    b.fillStyle = "rgba(133,146,171,.6)"; b.font = `500 ${Math.max(11, size * 0.07)}px "IBM Plex Mono", monospace`;
+    b.textAlign = "center"; b.textBaseline = "middle"; b.fillText("mapping…", g.c, g.c);
+  }
+  const sc = { canvas, ctx: canvas.getContext("2d"), dpr, size, g, d, big, bg: bgc, N: null, edges: [] };
+  if (d.ready) {
+    const N = nodes(d); sc.N = N;
+    for (let l = 0; l < L; l++) for (const n of N[l]) {
+      let px = g.c, py = g.c;
+      if (l > 0 && N[l - 1].length) {
+        let best = null, bs = -1;
+        for (const p of N[l - 1]) { const s = (0.15 + p.v) * Math.exp(-angDist(p.a, n.a) / 0.3); if (s > bs) { bs = s; best = p; } }
+        [px, py] = pos(g, best);
+      }
+      const [x, y] = pos(g, n);
+      const seed = n.l * 131 + n.e;
+      sc.edges.push({ n, px, py, x, y, seed, phase: rnd(seed * 7 + 3)() * 6.283, freq: 5 + rnd(seed * 13 + 1)() * 9 });
+    }
+  }
+  return sc;
+}
+
+function boltPts(x0, y0, x1, y1, seed, jag) {
+  const r = rnd(seed), segs = 4, dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, pts = [[x0, y0]];
+  for (let i = 1; i < segs; i++) {
+    const t = i / segs, off = (r() - 0.5) * jag * len;
+    pts.push([x0 + dx * t - (dy / len) * off, y0 + dy * t + (dx / len) * off]);
+  }
+  pts.push([x1, y1]);
+  return pts;
+}
+function strokePts(ctx, pts, frac) {
+  const segs = pts.length - 1, upto = frac * segs;
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i <= segs; i++) {
+    if (i <= upto) { ctx.lineTo(pts[i][0], pts[i][1]); continue; }
+    const f = upto - (i - 1); if (f <= 0) break;
+    ctx.lineTo(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f);
+    break;
+  }
+}
+
+const STRIKE = 1.2, PERIOD = 2.6, WAVE = 1.5;  // seconds: first strike outward, then a routing wave every PERIOD
+function render(sc, t) {
+  const { ctx, dpr, size, g, d, big } = sc;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
+  ctx.drawImage(sc.bg, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!d.ready) return;
+  const anim = t !== null;
+  const front = anim ? (t / STRIKE) * L : Infinity;                       // layers reached by the opening strike
+  const tw = anim && t > STRIKE ? ((t - STRIKE) % PERIOD) / WAVE : -1;   // 0..1 while a wave travels out
+  const wave = tw >= 0 && tw <= 1.15 ? tw * L : -99;
+  const crackle = anim ? Math.floor(t * 9) : 0;
+  ctx.globalCompositeOperation = "lighter";
+  const scale = size / 600;
+  const passes = big ? [[1, 0.18], [0, 1]] : [[0, 1]];
+  for (const [wide, mult] of passes) {
+    for (const ed of sc.edges) {
+      const n = ed.n;
+      const frac = Math.max(0, Math.min(1, front - n.l));
+      if (frac <= 0) continue;
+      let a = (0.12 + 0.88 * n.v) * mult, w = 1;
+      if (anim) {
+        const steady = 0.45 + 0.5 * n.v;                                   // busy experts flicker less
+        a *= steady + (1 - steady) * (0.5 + 0.5 * Math.sin(t * ed.freq + ed.phase));
+        const hit = Math.exp(-((n.l - wave) ** 2) / 2.5) + (front < L + 1 ? Math.exp(-((n.l + 1 - front) ** 2) / 1.5) : 0);
+        a *= 1 + 1.8 * hit; w = 1 + 0.9 * hit;
+      }
+      ctx.strokeStyle = n.kind === "pack" ? col(d, Math.min(1, a)) : n.kind === "base" ? `rgba(225,235,255,${Math.min(1, a * 0.8)})` : col(d, Math.min(1, a * 0.6), 45);
+      ctx.lineWidth = Math.max(0.35, (0.3 + 1.9 * n.v) * scale * (wide ? 4 : 1) * w);
+      const seed = anim && (crackle + ed.seed) % 3 === 0 ? ed.seed + crackle * 977 : ed.seed;  // a third of bolts re-strike each tick
+      ctx.beginPath(); strokePts(ctx, boltPts(ed.px, ed.py, ed.x, ed.y, seed, 0.22), frac); ctx.stroke();
+    }
+  }
+  for (const ed of sc.edges) {
+    const n = ed.n;
+    if (front - n.l < 1) continue;
+    const k = anim ? 1 + 1.5 * Math.exp(-((n.l - wave) ** 2) / 2.5) : 1;
+    ctx.fillStyle = n.kind === "pack" ? col(d, Math.min(1, (0.5 + 0.5 * n.v) * k), 78) : `rgba(240,245,255,${Math.min(1, (0.4 + 0.5 * n.v) * k)})`;
+    ctx.beginPath(); ctx.arc(ed.x, ed.y, (0.5 + 1.6 * n.v) * scale * (big ? 1.4 : 1.2) * Math.sqrt(k), 0, 7); ctx.fill();
+  }
+  let pulse = 1;
+  if (anim) pulse += (tw >= 0 ? 0.35 * Math.exp(-((tw * 6) ** 2) / 2) : 0) + (t < STRIKE ? 0.5 * (1 - t / STRIKE) : 0);
+  const rr = g.r0 * 1.4 * pulse;
+  const cg = ctx.createRadialGradient(g.c, g.c, 0, g.c, g.c, rr);
+  cg.addColorStop(0, "rgba(255,255,255,1)"); cg.addColorStop(0.35, col(d, 0.7, 85)); cg.addColorStop(1, col(d, 0));
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(g.c, g.c, rr, 0, 7); ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function draw(canvas, d, big) { const sc = build(canvas, d, big); render(sc, null); return sc; }
+
+// Animation of the large map: on/off, off by default when the system asks for reduced motion.
+let animOn = !reduced, raf = 0, t0 = 0;
+function loop(now) {
+  if (!animOn || !drawn) return;
+  render(drawn, (now - t0) / 1000);
+  raf = requestAnimationFrame(loop);
+}
+function restartAnim() {
+  cancelAnimationFrame(raf);
+  if (animOn && drawn) { t0 = performance.now(); raf = requestAnimationFrame(loop); }
+  else if (drawn) render(drawn, null);
+}
+
+const big = document.getElementById("big"), tip = document.getElementById("tip");
+let cur = Math.max(0, doms.findIndex(d => d.ready)), drawn = null;
+
+function overlap(a, b) {
+  let inter = 0, uni = 0;
+  for (let l = 0; l < L; l++) { const A = new Set(a.pack[l]); for (const e of b.pack[l]) if (A.has(e)) inter++; uni += A.size + b.pack[l].length; }
+  return inter / (uni - inter);
+}
+
+function select(i) {
+  cur = i; const d = doms[i];
+  document.getElementById("dName").textContent = d.label;
+  document.getElementById("dName").style.color = col(d, 1, 70);
+  document.getElementById("dSrc").textContent = d.source;
+  document.getElementById("fMass").textContent = d.ready ? Math.round(d.pack_mass * 100) + "%" : "—";
+  const bars = document.getElementById("bars"); bars.innerHTML = "";
+  if (d.ready) {
+    doms.map((o, j) => ({ o, j })).filter(x => x.o.ready && x.j !== i)
+      .map(x => ({ ...x, v: overlap(d, x.o) })).sort((p, q) => q.v - p.v)
+      .forEach(({ o, j, v }) => {
+        const b = document.createElement("button"); b.className = "bar"; b.type = "button";
+        b.innerHTML = `<span class="nm">${o.label}</span><span class="tr"><i style="width:${(v * 100).toFixed(1)}%;background:${col(o, .9)}"></i></span><span class="v">${Math.round(v * 100)}%</span>`;
+        b.setAttribute("aria-label", `${o.label}: ${Math.round(v * 100)} percent of pack experts in common`);
+        b.onclick = () => select(j); bars.appendChild(b);
+      });
+  }
+  drawn = build(big, d, true);
+  restartAnim();
+  document.querySelectorAll(".card").forEach((c, j) => c.setAttribute("aria-current", j === i ? "true" : "false"));
+  try { localStorage.setItem("dm-domain", d.key); } catch (e) {}
+}
+
+function buildGrid() {
+  const grid = document.getElementById("grid"); grid.innerHTML = "";
+  doms.forEach((d, i) => {
+    const b = document.createElement("button"); b.className = "card"; b.type = "button"; b.disabled = !d.ready;
+    b.innerHTML = `<canvas aria-hidden="true"></canvas><span class="nm">${d.label}</span><span class="st">${d.ready ? d.source : "mapping"}</span>`;
+    b.onclick = () => d.ready && select(i);
+    grid.appendChild(b);
+  });
+  document.getElementById("progress").textContent = `${doms.filter(d => d.ready).length} of ${doms.length} mapped`;
+}
+function drawGrid() { document.querySelectorAll(".card canvas").forEach((c, i) => draw(c, doms[i], false)); }
+
+big.addEventListener("pointermove", ev => {
+  if (!drawn) return;
+  const r = big.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  let best = null, bd = 14 * 14;
+  for (const row of drawn.N || []) for (const n of row) { const [nx, ny] = pos(drawn.g, n); const dd = (nx - x) ** 2 + (ny - y) ** 2; if (dd < bd) { bd = dd; best = n; } }
+  if (!best) { tip.hidden = true; return; }
+  const kind = best.kind === "pack" ? "in its pack" : best.kind === "base" ? "base plate" : "would pick, not installed at 51";
+  const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const lab = DATA.labels && DATA.labels[best.l][best.e];
+  const extra = lab && lab.t.length
+    ? `<br><span style="color:var(--dim)">gets</span> ${lab.t.map(x => "‹" + esc(x.replace(/\n/g, "↵")) + "›").join(" ")}<br><span style="color:var(--dim)">mostly</span> ${lab.c} · <span style="color:var(--dim)">favours</span> ${esc(lab.d.replace("_", " "))}`
+    : "";
+  tip.innerHTML = `layer ${best.l + 1} · expert ${best.e}<br>${(best.s * 100).toFixed(1)}% of this layer's picks · ${kind}${extra}`;
+  tip.hidden = false;
+  tip.style.left = Math.min(x + 14, r.width - tip.offsetWidth - 4) + "px";
+  tip.style.top = Math.min(y + 14, r.height - tip.offsetHeight - 4) + "px";
+});
+big.addEventListener("pointerleave", () => { tip.hidden = true; });
+
+function toggle(id, key) {
+  const b = document.getElementById(id);
+  b.onclick = () => { opts[key] = !opts[key]; b.setAttribute("aria-pressed", String(opts[key])); select(cur); drawGrid(); };
+}
+toggle("tBase", "base"); toggle("tAll", "all"); toggle("tIdx", "byIndex");
+const tAnim = document.getElementById("tAnim");
+tAnim.setAttribute("aria-pressed", String(animOn));
+tAnim.onclick = () => { animOn = !animOn; tAnim.setAttribute("aria-pressed", String(animOn)); restartAnim(); };
+
+buildGrid();
+try { const k = localStorage.getItem("dm-domain"); const j = doms.findIndex(d => d.key === k && d.ready); if (j >= 0) cur = j; } catch (e) {}
+select(cur); drawGrid();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { select(cur); drawGrid(); }, 150); });
+document.fonts && document.fonts.ready.then(() => { select(cur); drawGrid(); });
+</script>

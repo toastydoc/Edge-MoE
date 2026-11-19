@@ -1,0 +1,114 @@
+"""Answers for the blind-judged test: the same questions answered by the full model and by 8GB configurations.
+
+    python scripts/gen_judge_answers.py [--per-domain 30] [--configs full own shared]
+
+Questions come from each domain's held-out test articles (never profiled):
+"In <domain>, what is <title>? Explain it in one paragraph for an educated reader."
+
+Configurations (all the same 4-bit Gemma 4 26B-A4B weights):
+    full     all 128 experts, through the offloading path (exact full-model output)
+    own      base plate + the question's own domain pack, 51 per layer (swap packs per domain)
+    shared   one fixed 51-per-layer model built for all ten domains (no swapping)
+
+Greedy decoding, batched. Writes results/judge/questions.jsonl and
+results/judge/answers_<config>.jsonl; skips questions already answered.
+"""
+
+import argparse
+import json
+import random
+import sys
+import time
+from pathlib import Path
+
+import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from edge_moe.expert_packs import counts, load_manifest, pack_mask  # noqa: E402
+from edge_moe.expert_store import ExpertStore, mix_mask  # noqa: E402
+from edge_moe.quant_experts import load_resident  # noqa: E402
+
+WIKI = ["art", "history", "biology", "geology", "politics", "computer_science", "economics", "chemistry", "physics", "philosophy"]
+OUT = ROOT / "results" / "judge"
+
+
+def questions(per_domain: int) -> list[dict]:
+    path = OUT / "questions.jsonl"
+    if path.exists():
+        return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines()]
+    rng = random.Random(0)
+    qs = []
+    for d in WIKI:
+        rows = [json.loads(l) for l in (ROOT / "data" / "test" / f"wiki_{d}.jsonl").read_text(encoding="utf-8").splitlines()]
+        rows = [r for r in rows if not r["title"].startswith(("List", "Lists"))]
+        for r in rng.sample(rows, min(per_domain, len(rows))):
+            field = d.replace("_", " ")
+            qs.append({"id": f"{d}:{r['title']}", "domain": d, "title": r["title"],
+                       "question": f"In {field}, what is {r['title']}? Explain it in one paragraph for an educated reader."})  # fmt: skip
+    OUT.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(q, ensure_ascii=False) + "\n" for q in qs), encoding="utf-8")
+    return qs
+
+
+@torch.inference_mode()
+def answer(model, tok, qs: list[dict], batch: int, max_new: int) -> list[dict]:
+    out = []
+    for i in range(0, len(qs), batch):
+        chunk = qs[i : i + batch]
+        texts = [tok.apply_chat_template([{"role": "user", "content": q["question"]}], tokenize=False, add_generation_prompt=True) for q in chunk]
+        enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to("cuda")
+        t0 = time.time()
+        g = model.generate(**enc, max_new_tokens=max_new, do_sample=False)
+        dt = time.time() - t0
+        for q, row in zip(chunk, g[:, enc["input_ids"].shape[1] :]):
+            text = tok.decode(row, skip_special_tokens=True).strip()
+            out.append({"id": q["id"], "answer": text, "tokens": int((row != tok.pad_token_id).sum())})
+        torch.cuda.empty_cache()
+        print(f"  {i + len(chunk)}/{len(qs)}  {dt:.0f}s", flush=True)
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--per-domain", type=int, default=30)
+    ap.add_argument("--configs", nargs="+", default=["own", "shared", "full"])
+    ap.add_argument("--budget", type=int, default=51)
+    ap.add_argument("--batch", type=int, default=16)
+    ap.add_argument("--max-new", type=int, default=320)
+    args = ap.parse_args()
+
+    qs = questions(args.per_domain)
+    store = ExpertStore.from_packs([ROOT / "quant" / f"{n}.safetensors" for n in ("base", "medicine", "law", "math", "rest")])
+    model, tok, _ = load_resident([ROOT / "quant" / "base.safetensors"], quant_dense=True, quant_embed=True)
+    model.eval()
+    tok.padding_side = "left"
+    base = load_manifest(ROOT / "expert_packs" / "base.json")[1]
+    prof = lambda d: counts(ROOT / "profiles" / f"wiki_{d}.npz")  # noqa: E731
+    n = args.budget
+
+    for cfg in args.configs:
+        path = OUT / f"answers_{cfg}.jsonl"
+        done = {json.loads(l)["id"] for l in path.read_text(encoding="utf-8").splitlines()} if path.exists() else set()
+        todo = [q for q in qs if q["id"] not in done]
+        if not todo:
+            continue
+        print(f"=== {cfg}: {len(todo)} questions", flush=True)
+        groups = {d: [q for q in todo if q["domain"] == d] for d in WIKI} if cfg == "own" else {"all": todo}
+        if cfg == "full":
+            store.install_offload(model, n)
+        elif cfg == "shared":
+            store.install(model, mix_mask(base, [prof(d) for d in WIKI], n))
+        for d, group in groups.items():
+            if not group:
+                continue
+            if cfg == "own":
+                store.install(model, base | pack_mask(prof(d), base, n / 128))
+            res = answer(model, tok, group, args.batch, args.max_new)
+            with path.open("a", encoding="utf-8") as f:
+                for r in res:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+if __name__ == "__main__":
+    main()
