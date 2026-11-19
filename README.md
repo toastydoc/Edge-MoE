@@ -2,9 +2,16 @@
 
 **[Explore the interactive domain maps →](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)** Which of the model's 3,840 experts each subject uses, the full model against an 8 GB expert pack, and what the trade costs.
 
-**Research question.** Can an existing mixture-of-experts model be repackaged, without retraining its weights, so that one shared base and a user-selected expert pack deliver competitive answer quality on an 8 GB consumer GPU?
+**Research question.** How small can the *whole* memory footprint of a frontier mixture-of-experts model get, by keeping only the experts a domain uses, before its answers stop being good enough? Gemma 4 26B-A4B is the first model through this evaluation; the method applies to any MoE model with many fine-grained experts.
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
+
+**Where this fits.** Lowering GPU memory alone is a solved problem: expert offloading (what llama.cpp, LM Studio and Ollama do for MoE models) keeps every expert in system RAM and gives full-model quality on an 8 GB card. What offloading does not shrink is the total footprint: it still needs the whole model in RAM and on disk. Expert packs shrink all of it (GPU memory, system RAM and download), which matters where total memory is the limit: laptops with 8–16 GB, phones, small boards, shared-memory machines. So the project makes two claims, each tested separately:
+
+1. **On memory-limited devices, expert packs cut the whole footprint at a measured quality cost.** At 51 experts per layer the cost is real: a blind judge preferred the full model's answers most of the time (results below). The open question, being measured now, is how much budget closes the gap.
+2. **On ordinary PCs, routing fingerprints can make offloading smarter at no quality cost:** keep the domain's pack on the GPU and offload the rest, so most expert lookups hit the GPU. This hybrid is proposed, not yet measured.
+
+Both claims rest on the same observation, which does hold: each domain has a stable routing fingerprint, and choosing experts by it beats choosing at random by a wide margin.
 
 **Terms.**
 
