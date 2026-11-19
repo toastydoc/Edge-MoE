@@ -112,7 +112,19 @@ def build_data() -> dict:
                 })  # fmt: skip
             labels.append(row)
 
+    # Trade-off figures shown beside the map. Memory: peak GPU memory in use, from the README
+    # (full 26B 4-bit on MMLU: 14.9 GB; 51 experts per layer: 7.7 GB). Quality: results/domain_summary.json.
+    tradeoff = {"gpu_full_gb": 14.9, "gpu_packed_gb": 7.7, "quality": {}, "shared": {}}
+    sp = ROOT / "results" / "domain_summary.json"
+    if sp.exists():
+        summ = json.loads(sp.read_text(encoding="utf-8"))
+        tradeoff["quality"] = {d: round(v["own"], 4) for d, v in summ.get("packs", {}).items()}
+        be = summ.get("break_even", {})
+        tradeoff["shared"] = {k: {"excess": round(v, 4), "kept": round(be["gain_kept"][k], 3)} for k, v in be.get("curve", {}).items()}
+        tradeoff["random"] = round(be.get("random", 0), 4)
+
     data = {
+        "tradeoff": tradeoff,
         "labels": labels,
         "layers": L,
         "experts": E,

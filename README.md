@@ -1,13 +1,15 @@
-# Edge-MoE: domain expert packs for a mixture-of-experts model
+# Edge-MoE: expert packs for a mixture-of-experts model
 
-**Research question.** Can an existing mixture-of-experts model be repackaged, without retraining its weights, so that one shared base and a user-selected domain pack deliver competitive answer quality on an 8 GB consumer GPU?
+**Research question.** Can an existing mixture-of-experts model be repackaged, without retraining its weights, so that one shared base and a user-selected expert pack deliver competitive answer quality on an 8 GB consumer GPU?
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
+
+**Terms.** An *expert pack* is the set of experts one domain (or a few domains together) uses most, loaded on top of the *base plate* (shown as the "shared core" in the maps). The method is domain-scoped expert loading: in the literature's terms, domain-specific expert pruning without retraining, made reversible and swappable. It is not compression (no weight is changed) and not offloading (experts outside the pack are not reachable while it is loaded).
 
 The model is `google/gemma-4-26B-A4B-it`, which has 30 layers of 128 experts and routes each token to 8 of them. It is split into:
 
 - **Base plate:** attention, embeddings, all routers, plus the experts that general text uses most (10–20% per layer).
-- **Domain packs (medicine, law, math):** the experts that domain uses most and that are not already in the base. Packs stack, and an expert shared by two packs is loaded once.
+- **Expert packs (medicine, law, math, and more below):** the experts that domain uses most and that are not already in the base. Packs stack, and an expert shared by two packs is loaded once.
 - **Routers restricted to installed experts:** each router picks its top 8 among the experts present. Installing a pack only adds experts.
 - **Pack selector ("gate"):** a small logistic regression over the base plate's hidden states. It picks a pack before any pack is loaded. When it fires for a domain with no pack installed, that is a missing-module signal: the device can fetch the pack or defer to an online service.
 
@@ -21,7 +23,7 @@ All weights are 4-bit (symmetric round-to-nearest, groups of 32, bf16 scales), a
 |---|---|---|---|---|---|
 | 26B base + 40% law pack | 7.1 GB | .655 | .305 | 49.7 | 3–5 tok/s |
 | 26B base + 40% math pack | 7.1 GB | .605 | .590 | 60.8 | 3–5 tok/s |
-| 26B base + full domain pack | 8.5 GB | .705–.750 | .680–.700 | — | 3–5 tok/s |
+| 26B base + full expert pack | 8.5 GB | .705–.750 | .680–.700 | — | 3–5 tok/s |
 | 26B base + three packs | 10.5 GB | .770 | .645 | 75.0 | about 5 tok/s |
 | Full 26B | 14.9 GB | .775 | .660 | 79.3 | — |
 | Gemma 4 12B | 7.5 GB | .730 | .565 | 70.3 | 3.2 tok/s |
@@ -101,7 +103,7 @@ Two domains share 51 slots at no measurable cost. From four on, the curve levels
 
 **What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over all 15 domains) recorded which tokens each expert receives. In layers 1–2 and again in the last three layers, token type (numbers, punctuation, word starts) explains more of the choice of expert than the domain does; in layers 3–27 the domain explains more (mean share of expert-choice entropy: domain 5.6 / 6.3 / 5.1% in layers 1–10 / 11–20 / 21–30, token type 4.2 / 1.9 / 2.4%). Neither explains most of it. The two measures have different numbers of categories (15 and 6), so they are not directly comparable without a shuffled baseline.
 
-**Domain maps** ([open the interactive maps](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html), also on [Claude.ai](https://claude.ai/artifact/RCQaEJswZb8Pbj3Q5oPtYM); source `viz/domain_maps.html`) draw each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in evenly spaced slots placed by which domains favour them, base plate in white and the pack in the domain's colour. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
+**Domain maps** ([open the interactive maps](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html), also on [Claude.ai](https://claude.ai/artifact/RCQaEJswZb8Pbj3Q5oPtYM); source `viz/domain_maps.html`) draw each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in numbered slots (optionally grouped by domain preference, the layout used in the figure above), the shared core in white and the pack in the domain's colour. Switch between the full model (every expert the domain's text reaches) and the 8 GB expert pack, select up to three domains to see them share one pack, and read the trade-off beside the map: GPU memory −48% (7.7 GB vs 14.9 GB), experts on the GPU −60%, and the measured quality cost for that selection. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
 
 **Pending: blind-judged answers.** Loss measures surprise at real text, not answer quality. 300 questions written from the held-out articles (30 per domain, `results/judge/questions.jsonl`) are being answered by the full model, each domain's own pack, and one fixed model for all ten, then judged pairwise and blind by Gemini 3.1 Pro (each pair in both orders; a win counts only when both agree). Results will be added here.
 
@@ -119,7 +121,7 @@ Two domains share 51 slots at no measurable cost. From four on, the curve levels
 
 ## Prior work
 
-Expert pruning and skipping without retraining: Lu et al., "Not All Experts are Equal: Efficient Expert Pruning and Skipping for Mixture-of-Experts Large Language Models" (ACL 2024), and work on task-specific expert pruning. What this project adds is the packaging: one shared base plate, stackable domain packs, a pack selector that runs on the base alone, and the missing-pack signal.
+Expert pruning and skipping without retraining: Lu et al., "Not All Experts are Equal: Efficient Expert Pruning and Skipping for Mixture-of-Experts Large Language Models" (ACL 2024), and work on task-specific expert pruning. What this project adds is the packaging: one shared base plate, stackable expert packs, a pack selector that runs on the base alone, and the missing-pack signal.
 
 ## Reproducing
 

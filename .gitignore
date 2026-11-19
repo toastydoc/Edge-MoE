@@ -23,3 +23,6 @@ __pycache__/
 
 # local smoke-test leftovers
 profiles/_smoke*
+
+# local tooling
+.claude/

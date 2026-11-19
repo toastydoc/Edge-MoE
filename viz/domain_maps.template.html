@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one large field (the selected domain's map) beside its readout, then a constellation grid of every domain. */
+/* Layout: one large field (the selected domains' map) beside its controls and trade-off readout, then a grid of every domain to pick from. */
 :root {
   --void: #05070d;          /* page */
   --deep: #0a0f1c;          /* panels */
@@ -11,6 +11,8 @@
   --ink: #dfe7f5;           /* text */
   --dim: #8592ab;           /* secondary text */
   --hair: #1b2438;          /* rules */
+  --gain: #6fd8a0;          /* what packing saves */
+  --cost: #f0a86a;          /* what it costs */
   --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
@@ -24,21 +26,35 @@ body { font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
 header { display: grid; gap: 8px; }
 .eyebrow { font-family: var(--f-data); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--rim); }
 h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(28px, 4vw, 42px); line-height: 1.1; margin: 0; text-wrap: balance; }
-.lede { color: var(--dim); max-width: 68ch; margin: 0; }
-.stage { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.lede { color: var(--dim); max-width: 70ch; margin: 0; }
+.stage { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 @media (max-width: 860px) { .stage { grid-template-columns: minmax(0, 1fr); } }
 .field { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; }
 .field canvas { width: 100%; height: 100%; display: block; }
-.tip { position: absolute; pointer-events: none; background: rgba(5,7,13,.92); border: 1px solid var(--hair); padding: 6px 9px;
-  font-family: var(--f-data); font-size: 12px; line-height: 1.45; white-space: nowrap; }
-.readout { display: grid; gap: 20px; min-width: 0; }
-.readout h2 { font-family: var(--f-display); font-weight: 600; font-size: 30px; margin: 0; line-height: 1.1; }
+.tip { position: absolute; pointer-events: none; background: rgba(5,7,13,.94); border: 1px solid var(--hair); padding: 6px 9px;
+  font-family: var(--f-data); font-size: 12px; line-height: 1.45; white-space: nowrap; z-index: 2; }
+.readout { display: grid; gap: 18px; min-width: 0; }
+.readout h2 { font-family: var(--f-display); font-weight: 600; font-size: 28px; margin: 0; line-height: 1.15; text-wrap: balance; }
 .src { font-family: var(--f-data); font-size: 12px; color: var(--dim); }
-.figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.fig { border-top: 1px solid var(--hair); padding-top: 8px; }
-.fig b { display: block; font-family: var(--f-data); font-weight: 500; font-size: 22px; font-variant-numeric: tabular-nums; }
-.fig span { font-size: 12px; color: var(--dim); }
 .sec-label { font-family: var(--f-data); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; }
+.seg { display: inline-flex; border: 1px solid var(--hair); }
+.seg button { font-family: var(--f-data); font-size: 12px; padding: 7px 12px; background: transparent; color: var(--dim); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--hair); }
+.seg button[aria-pressed="true"] { background: var(--deep); color: var(--ink); box-shadow: inset 0 -2px 0 var(--rim); }
+.seg button:focus-visible, .tg:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.tg { font-family: var(--f-data); font-size: 12px; padding: 6px 10px; background: transparent; color: var(--dim); border: 1px solid var(--hair); cursor: pointer; }
+.tg[aria-pressed="true"] { color: var(--ink); border-color: var(--rim); }
+.trade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.cell { border-top: 1px solid var(--hair); padding-top: 8px; min-width: 0; }
+.cell b { display: block; font-family: var(--f-data); font-weight: 500; font-size: 20px; font-variant-numeric: tabular-nums; }
+.cell b.gain { color: var(--gain); }
+.cell b.cost { color: var(--cost); }
+.cell span { font-size: 12px; color: var(--dim); display: block; }
+.note { font-size: 12.5px; color: var(--dim); margin: 0; max-width: 60ch; }
+.key { display: grid; gap: 5px; font-size: 13px; color: var(--dim); margin: 0; padding: 0; list-style: none; }
+.key li { display: flex; gap: 10px; align-items: baseline; }
+.key b { color: var(--ink); font-weight: 500; min-width: 7.5em; }
 .bars { display: grid; gap: 5px; }
 .bar { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 3.2em; align-items: center; gap: 10px; font-size: 13px;
   background: none; border: 0; color: inherit; font: inherit; text-align: left; padding: 2px 0; cursor: pointer; }
@@ -48,99 +64,128 @@ h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(28px, 4vw
 .bar .tr { height: 6px; background: var(--hair); position: relative; }
 .bar .tr i { position: absolute; inset: 0 auto 0 0; }
 .bar .v { font-family: var(--f-data); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
-.tg { font-family: var(--f-data); font-size: 12px; padding: 6px 10px; background: transparent; color: var(--dim);
-  border: 1px solid var(--hair); cursor: pointer; }
-.tg[aria-pressed="true"] { color: var(--ink); border-color: var(--rim); }
-.tg:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
-.key { display: grid; gap: 6px; font-size: 13px; color: var(--dim); margin: 0; padding: 0; list-style: none; }
-.key li { display: flex; gap: 10px; align-items: baseline; }
-.key b { color: var(--ink); font-weight: 500; min-width: 6.5em; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.card { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; display: grid; gap: 6px; text-align: center; font: inherit; }
+.card { background: none; border: 1px solid transparent; padding: 6px; color: inherit; cursor: pointer; display: grid; gap: 6px; text-align: center; font: inherit; }
 .card canvas { width: 100%; aspect-ratio: 1; display: block; }
 .card .nm { font-family: var(--f-display); font-weight: 500; font-size: 15px; }
 .card .st { font-family: var(--f-data); font-size: 11px; color: var(--dim); }
-.card[aria-current="true"] .nm { color: var(--rim); }
-.card:focus-visible { outline: 1px solid var(--rim); outline-offset: 4px; }
+.card[aria-pressed="true"] { border-color: var(--hair); background: var(--deep); }
+.card[aria-pressed="true"] .nm { color: var(--ink); }
+.card .pick { font-family: var(--f-data); font-size: 11px; height: 1.3em; }
+.card:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
 .card[disabled] { cursor: default; }
-footer { color: var(--dim); font-size: 13px; max-width: 80ch; border-top: 1px solid var(--hair); padding-top: 14px; }
+footer { color: var(--dim); font-size: 13px; max-width: 82ch; border-top: 1px solid var(--hair); padding-top: 14px; display: grid; gap: 8px; }
+footer p { margin: 0; }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts</div>
+    <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts · expert packs</div>
     <h1>Where the router sends each domain</h1>
-    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts. Bolts trace the experts a domain is routed to, layer by layer. Every ring has 128 evenly spaced slots. By default an expert's slot depends on which domains use it more than the others do, so each domain's experts lean toward its own side of the circle; switch to expert-number order to see the raw layout.</p>
+    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a domain's text is routed to, layer by layer. Compare what the full model uses with what an 8 GB expert pack keeps, for one domain or up to three sharing one pack.</p>
   </header>
 
   <section class="stage">
-    <div class="field" id="field"><canvas id="big" aria-label="Expert map for the selected domain"></canvas><div class="tip" id="tip" hidden></div></div>
+    <div class="field" id="field"><canvas id="big" aria-label="Expert map for the selected domains"></canvas><div class="tip" id="tip" hidden></div></div>
     <div class="readout">
       <div>
         <h2 id="dName">—</h2>
         <div class="src" id="dSrc"></div>
       </div>
-      <div class="figs">
-        <div class="fig"><b id="fMass">—</b><span>of its routing lands on the 51 installed experts</span></div>
-        <div class="fig"><b>26</b><span>shared base-plate experts per layer</span></div>
-        <div class="fig"><b>25</b><span>pack experts per layer, its own</span></div>
-      </div>
-      <div class="toggles" role="group" aria-label="What to draw">
-        <button class="tg" id="tAnim" aria-pressed="true">Animate</button>
-        <button class="tg" id="tBase" aria-pressed="true">Base plate</button>
-        <button class="tg" id="tAll" aria-pressed="false" title="Experts it picks when all 128 are available, including those not installed at 51">Every expert it would pick</button>
-        <button class="tg" id="tIdx" aria-pressed="false">Order by expert number</button>
-      </div>
-      <ul class="key">
-        <li><b style="color:var(--rim)">Domain colour</b> its pack: the 25 experts per layer that are only installed for it</li>
-        <li><b>White</b> the base plate, installed for every domain</li>
-        <li><b>Bolt brightness</b> how much of the layer's routing that expert takes</li>
-        <li><b>Animation</b> a strike from the router outward, then a wave through the layers in order, as each token takes; busy experts burn steady, rarely used ones flicker</li>
-      </ul>
+
       <div>
-        <p class="sec-label">Pack experts shared with</p>
+        <p class="sec-label">View</p>
+        <div class="seg" role="group" aria-label="Which model to draw">
+          <button type="button" id="vFull" aria-pressed="false">Full model</button>
+          <button type="button" id="vPack" aria-pressed="true">Expert pack (8 GB)</button>
+        </div>
+      </div>
+      <div class="toggles" role="group" aria-label="Overlays">
+        <button class="tg" type="button" id="tBase" aria-pressed="true" title="The experts general text uses most, installed for every domain">Shared core</button>
+        <button class="tg" type="button" id="tAnim" aria-pressed="true">Animate</button>
+        <button class="tg" type="button" id="tPref" aria-pressed="false" title="Reorders every ring by which domains favour each expert. The same layout is used for all domains, but it makes them look more separated than expert-number order does.">Group by domain preference</button>
+      </div>
+
+      <div>
+        <p class="sec-label">Trade-off at 51 experts per layer</p>
+        <div class="trade">
+          <div class="cell"><b class="gain" id="mGpu">−48%</b><span id="mGpuTxt">GPU memory: 7.7 GB instead of 14.9 GB</span></div>
+          <div class="cell"><b class="gain">−60%</b><span>experts on the GPU: 51 of 128 per layer</span></div>
+          <div class="cell"><b id="mMass">—</b><span id="mMassTxt">of this domain's routing lands on installed experts</span></div>
+          <div class="cell"><b class="cost" id="mQual">—</b><span id="mQualTxt">quality cost</span></div>
+        </div>
+      </div>
+      <p class="note" id="tradeNote">Judged answer quality is still being measured. The other experts stay in RAM or on disk only if you want to switch packs; a device for one domain needs just the shared core and its pack.</p>
+
+      <ul class="key" id="key"></ul>
+
+      <div id="barsWrap">
+        <p class="sec-label">Pack experts in common with</p>
         <div class="bars" id="bars"></div>
       </div>
     </div>
   </section>
 
   <section>
-    <p class="sec-label">All domains · <span id="progress"></span></p>
+    <p class="sec-label">Domains · select up to three to share one pack · <span id="progress"></span></p>
     <div class="grid" id="grid"></div>
   </section>
 
-  <footer>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. A pack is the domain's most used experts outside the base plate, up to 51 per layer. Domains marked "mapping" are still being profiled; the page is regenerated as each one finishes.</footer>
+  <footer>
+    <p>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. An expert pack holds a domain's most used experts outside the shared core, up to 51 per layer in total. Several domains share one pack by taking the experts they use most together, still 51 per layer.</p>
+    <p>Quality cost is extra next-token loss on each domain's held-out Wikipedia text versus the full model; for two or three domains it is the average measured over random sets of that size, not for this exact combination. Memory is peak GPU memory in use. The bolts between layers are drawn for legibility: the router does not pass tokens from one particular expert to another.</p>
+  </footer>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
-const L = DATA.layers, E = DATA.experts;
+const L = DATA.layers, E = DATA.experts, N_INST = DATA.budget;
 const doms = DATA.domains;
+const TO = DATA.tradeoff || { quality: {}, shared: {} };
 const hue = d => Math.round(((d.anchor + Math.PI / 2) / (2 * Math.PI)) * 360 + 360) % 360;
 const col = (d, a, light = 62) => `hsla(${hue(d)}, 95%, ${light}%, ${a})`;
 const baseSet = DATA.base.map(ids => new Set(ids));
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let opts = { base: true, all: false, byIndex: false };
-// Every layer's 128 experts sit in 128 evenly spaced slots; the order within the ring is either by domain affinity or by expert number.
-const angOf = (l, e) => ((opts.byIndex ? e : DATA.slot[l][e]) / E) * 2 * Math.PI + doms[0].anchor;
+let opts = { base: true, pref: false, view: "pack" };
+let sel = [];   // indices of selected domains, at most 3; the first is the primary
+// Every layer's 128 experts sit in 128 evenly spaced slots, by expert number unless grouped by domain preference.
+const angOf = (l, e) => ((opts.pref ? DATA.slot[l][e] : e) / E) * 2 * Math.PI - Math.PI / 2;
 
-// Seeded jitter so each bolt keeps its shape between redraws.
 function rnd(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-function nodes(d) {
-  // Lit experts per layer: the installed set (base + pack), or everything with real use.
+// Installed experts for a set of domains: shared core + the experts they use most together, 51 per layer.
+const instCache = new Map();
+function installed(ds) {
+  const key = ds.map(d => d.key).sort().join("+");
+  if (instCache.has(key)) return instCache.get(key);
   const out = [];
   for (let l = 0; l < L; l++) {
-    const sh = d.share[l], mx = Math.max(...sh);
-    const pack = new Set(d.pack[l]);
-    const row = [];
+    const s = new Set(baseSet[l]);
+    if (ds.length === 1) for (const e of ds[0].pack[l]) s.add(e);
+    else {
+      const score = Array.from({ length: E }, (_, e) => ds.reduce((t, d) => t + d.share[l][e], 0));
+      const ranked = [...Array(E).keys()].filter(e => !s.has(e)).sort((a, b) => score[b] - score[a]);
+      for (const e of ranked.slice(0, N_INST - s.size)) s.add(e);
+    }
+    out.push(s);
+  }
+  instCache.set(key, out);
+  return out;
+}
+
+// Lit experts per layer for the selected domains and view.
+function nodes(ds, view) {
+  const inst = installed(ds), out = [];
+  for (let l = 0; l < L; l++) {
+    const S = Array.from({ length: E }, (_, e) => ds.reduce((t, d) => t + d.share[l][e], 0) / ds.length);
+    const mx = Math.max(...S), row = [];
     for (let e = 0; e < E; e++) {
-      const isBase = baseSet[l].has(e), isPack = pack.has(e);
-      const lit = opts.all ? sh[e] > 40 : (isPack || (opts.base && isBase));
+      const isBase = baseSet[l].has(e), isInst = inst[l].has(e);
+      const lit = view === "full" ? S[e] >= 10 : isInst;   // full model: anything taking at least 0.1% of the layer's picks
       if (!lit || (!opts.base && isBase)) continue;
-      row.push({ l, e, s: sh[e] / 1e4, v: sh[e] / mx, kind: isPack ? "pack" : isBase ? "base" : "other",
-        a: angOf(l, e) });
+      let owner = ds[0], best = -1;
+      for (const d of ds) if (d.share[l][e] > best) { best = d.share[l][e]; owner = d; }
+      row.push({ l, e, s: S[e] / 1e4, v: S[e] / mx, owner, kind: isBase ? "base" : isInst ? "pack" : "other", a: angOf(l, e) });
     }
     out.push(row);
   }
@@ -152,13 +197,12 @@ const rad = (g, l) => g.r0 + (g.R - g.r0) * (l + 0.6) / L;
 const pos = (g, n) => [g.c + Math.cos(n.a) * rad(g, n.l), g.c + Math.sin(n.a) * rad(g, n.l)];
 const angDist = (a, b) => { const x = Math.abs(a - b) % (2 * Math.PI); return Math.min(x, 2 * Math.PI - x); };
 
-// A scene is built once per domain/toggle change; render() repaints it, statically (t = null) or at time t (seconds).
-function build(canvas, d, big) {
+// A scene is built once per selection/toggle change; render() repaints it, statically (t = null) or at time t (seconds).
+function build(canvas, ds, view, big) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const size = canvas.clientWidth;
   canvas.width = canvas.height = Math.round(size * dpr);
   const g = geom(size);
-  // Static backdrop: field, layer rings, every expert slot, rim. Drawn once to an offscreen canvas.
   const bgc = document.createElement("canvas"); bgc.width = bgc.height = canvas.width;
   const b = bgc.getContext("2d"); b.setTransform(dpr, 0, 0, dpr, 0, 0);
   const grad = b.createRadialGradient(g.c, g.c, 0, g.c, g.c, g.R * 1.1);
@@ -176,13 +220,14 @@ function build(canvas, d, big) {
   b.save(); b.shadowColor = "rgba(47,211,232,.9)"; b.shadowBlur = big ? 18 : 8;
   b.strokeStyle = "rgba(47,211,232,.85)"; b.lineWidth = big ? 2.2 : 1.4;
   b.beginPath(); b.arc(g.c, g.c, g.R * 1.04, 0, 7); b.stroke(); b.restore();
-  if (!d.ready) {
+  const ready = ds.length && ds.every(d => d.ready);
+  if (!ready) {
     b.fillStyle = "rgba(133,146,171,.6)"; b.font = `500 ${Math.max(11, size * 0.07)}px "IBM Plex Mono", monospace`;
-    b.textAlign = "center"; b.textBaseline = "middle"; b.fillText("mapping…", g.c, g.c);
+    b.textAlign = "center"; b.textBaseline = "middle"; b.fillText(ds.length ? "mapping…" : "pick a domain", g.c, g.c);
   }
-  const sc = { canvas, ctx: canvas.getContext("2d"), dpr, size, g, d, big, bg: bgc, N: null, edges: [] };
-  if (d.ready) {
-    const N = nodes(d); sc.N = N;
+  const sc = { canvas, ctx: canvas.getContext("2d"), dpr, size, g, ds, big, bg: bgc, N: null, edges: [] };
+  if (ready) {
+    const N = nodes(ds, view); sc.N = N;
     for (let l = 0; l < L; l++) for (const n of N[l]) {
       let px = g.c, py = g.c;
       if (l > 0 && N[l - 1].length) {
@@ -220,16 +265,18 @@ function strokePts(ctx, pts, frac) {
 
 const STRIKE = 1.2, PERIOD = 2.6, WAVE = 1.5;  // seconds: first strike outward, then a routing wave every PERIOD
 function render(sc, t) {
-  const { ctx, dpr, size, g, d, big } = sc;
+  const { ctx, dpr, size, g, big } = sc;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
   ctx.drawImage(sc.bg, 0, 0);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (!d.ready) return;
+  if (!sc.N) return;
   const anim = t !== null;
-  const front = anim ? (t / STRIKE) * L : Infinity;                       // layers reached by the opening strike
-  const tw = anim && t > STRIKE ? ((t - STRIKE) % PERIOD) / WAVE : -1;   // 0..1 while a wave travels out
+  const front = anim ? (t / STRIKE) * L : Infinity;
+  const tw = anim && t > STRIKE ? ((t - STRIKE) % PERIOD) / WAVE : -1;
   const wave = tw >= 0 && tw <= 1.15 ? tw * L : -99;
   const crackle = anim ? Math.floor(t * 9) : 0;
+  const strokeCol = (n, a) => n.kind === "base" ? `rgba(225,235,255,${Math.min(1, a * 0.42)})`
+    : n.kind === "pack" ? col(n.owner, Math.min(1, a)) : col(n.owner, Math.min(1, a * 0.45), 42);
   ctx.globalCompositeOperation = "lighter";
   const scale = size / 600;
   const passes = big ? [[1, 0.18], [0, 1]] : [[0, 1]];
@@ -240,14 +287,14 @@ function render(sc, t) {
       if (frac <= 0) continue;
       let a = (0.12 + 0.88 * n.v) * mult, w = 1;
       if (anim) {
-        const steady = 0.45 + 0.5 * n.v;                                   // busy experts flicker less
+        const steady = 0.45 + 0.5 * n.v;
         a *= steady + (1 - steady) * (0.5 + 0.5 * Math.sin(t * ed.freq + ed.phase));
         const hit = Math.exp(-((n.l - wave) ** 2) / 2.5) + (front < L + 1 ? Math.exp(-((n.l + 1 - front) ** 2) / 1.5) : 0);
         a *= 1 + 1.8 * hit; w = 1 + 0.9 * hit;
       }
-      ctx.strokeStyle = n.kind === "pack" ? col(d, Math.min(1, a)) : n.kind === "base" ? `rgba(225,235,255,${Math.min(1, a * 0.8)})` : col(d, Math.min(1, a * 0.6), 45);
+      ctx.strokeStyle = strokeCol(n, a);
       ctx.lineWidth = Math.max(0.35, (0.3 + 1.9 * n.v) * scale * (wide ? 4 : 1) * w);
-      const seed = anim && (crackle + ed.seed) % 3 === 0 ? ed.seed + crackle * 977 : ed.seed;  // a third of bolts re-strike each tick
+      const seed = anim && (crackle + ed.seed) % 3 === 0 ? ed.seed + crackle * 977 : ed.seed;
       ctx.beginPath(); strokePts(ctx, boltPts(ed.px, ed.py, ed.x, ed.y, seed, 0.22), frac); ctx.stroke();
     }
   }
@@ -255,108 +302,165 @@ function render(sc, t) {
     const n = ed.n;
     if (front - n.l < 1) continue;
     const k = anim ? 1 + 1.5 * Math.exp(-((n.l - wave) ** 2) / 2.5) : 1;
-    ctx.fillStyle = n.kind === "pack" ? col(d, Math.min(1, (0.5 + 0.5 * n.v) * k), 78) : `rgba(240,245,255,${Math.min(1, (0.4 + 0.5 * n.v) * k)})`;
+    const base = n.kind === "base";
+    ctx.fillStyle = base ? `rgba(240,245,255,${Math.min(1, (0.25 + 0.3 * n.v) * k)})`
+      : col(n.owner, Math.min(1, (n.kind === "pack" ? 0.5 + 0.5 * n.v : 0.2 + 0.3 * n.v) * k), n.kind === "pack" ? 78 : 50);
     ctx.beginPath(); ctx.arc(ed.x, ed.y, (0.5 + 1.6 * n.v) * scale * (big ? 1.4 : 1.2) * Math.sqrt(k), 0, 7); ctx.fill();
   }
   let pulse = 1;
   if (anim) pulse += (tw >= 0 ? 0.35 * Math.exp(-((tw * 6) ** 2) / 2) : 0) + (t < STRIKE ? 0.5 * (1 - t / STRIKE) : 0);
-  const rr = g.r0 * 1.4 * pulse;
+  const rr = g.r0 * 1.4 * pulse, d0 = sc.ds[0];
   const cg = ctx.createRadialGradient(g.c, g.c, 0, g.c, g.c, rr);
-  cg.addColorStop(0, "rgba(255,255,255,1)"); cg.addColorStop(0.35, col(d, 0.7, 85)); cg.addColorStop(1, col(d, 0));
+  cg.addColorStop(0, "rgba(255,255,255,1)"); cg.addColorStop(0.35, col(d0, 0.7, 85)); cg.addColorStop(1, col(d0, 0));
   ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(g.c, g.c, rr, 0, 7); ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 }
 
-function draw(canvas, d, big) { const sc = build(canvas, d, big); render(sc, null); return sc; }
-
-// Animation of the large map: on/off, off by default when the system asks for reduced motion.
+const big = document.getElementById("big"), tip = document.getElementById("tip");
+let drawn = null;
 let animOn = !reduced, raf = 0, t0 = 0;
-function loop(now) {
-  if (!animOn || !drawn) return;
-  render(drawn, (now - t0) / 1000);
-  raf = requestAnimationFrame(loop);
-}
+function loop(now) { if (!animOn || !drawn) return; render(drawn, (now - t0) / 1000); raf = requestAnimationFrame(loop); }
 function restartAnim() {
   cancelAnimationFrame(raf);
-  if (animOn && drawn) { t0 = performance.now(); raf = requestAnimationFrame(loop); }
+  if (animOn && drawn && drawn.N) { t0 = performance.now(); raf = requestAnimationFrame(loop); }
   else if (drawn) render(drawn, null);
 }
-
-const big = document.getElementById("big"), tip = document.getElementById("tip");
-let cur = Math.max(0, doms.findIndex(d => d.ready)), drawn = null;
 
 function overlap(a, b) {
   let inter = 0, uni = 0;
   for (let l = 0; l < L; l++) { const A = new Set(a.pack[l]); for (const e of b.pack[l]) if (A.has(e)) inter++; uni += A.size + b.pack[l].length; }
   return inter / (uni - inter);
 }
+const pct = x => (x >= 0 ? "+" : "") + Math.round(x * 100) + "%";
 
-function select(i) {
-  cur = i; const d = doms[i];
-  document.getElementById("dName").textContent = d.label;
-  document.getElementById("dName").style.color = col(d, 1, 70);
-  document.getElementById("dSrc").textContent = d.source;
-  document.getElementById("fMass").textContent = d.ready ? Math.round(d.pack_mass * 100) + "%" : "—";
-  const bars = document.getElementById("bars"); bars.innerHTML = "";
-  if (d.ready) {
+function readout() {
+  const ds = sel.map(i => doms[i]);
+  document.getElementById("dName").innerHTML = ds.map(d => `<span style="color:${col(d, 1, 70)}">${d.label}</span>`).join(" + ") || "—";
+  document.getElementById("dSrc").textContent = ds.length > 1 ? `${ds.length} domains sharing one 51-expert pack` : ds.length ? ds[0].source : "";
+  // routing kept: share of each selected domain's routing on the installed experts, averaged
+  const inst = installed(ds);
+  let mass = 0;
+  for (const d of ds) { let m = 0; for (let l = 0; l < L; l++) for (const e of inst[l]) m += d.share[l][e]; mass += m / 1e4 / L; }
+  document.getElementById("mMass").textContent = ds.length ? Math.round((mass / ds.length) * 100) + "%" : "—";
+  document.getElementById("mMassTxt").textContent = ds.length > 1 ? "of these domains' routing lands on installed experts" : "of this domain's routing lands on installed experts";
+  // quality cost
+  const q = document.getElementById("mQual"), qt = document.getElementById("mQualTxt");
+  if (ds.length === 1 && TO.quality[ds[0].key] !== undefined) {
+    const x = TO.quality[ds[0].key];
+    q.textContent = `+${x.toFixed(2)} nats`;
+    qt.textContent = `extra loss per token vs the full model, about ${pct(Math.exp(x) - 1)} perplexity`;
+  } else if (ds.length > 1 && TO.shared[String(ds.length)] && ds.every(d => TO.quality[d.key] !== undefined)) {
+    const s = TO.shared[String(ds.length)];
+    q.textContent = `+${s.excess.toFixed(2)} nats`;
+    qt.textContent = `typical for ${ds.length} domains sharing (${Math.round(s.kept * 100)}% of a dedicated pack's gain over random experts)`;
+  } else {
+    q.textContent = "n/a";
+    qt.textContent = "not measured on held-out text for this selection (law and regulation have task results in the README)";
+  }
+  // key
+  const key = document.getElementById("key");
+  const items = [];
+  if (opts.view === "full") items.push(["Full model", "every expert this text is routed to when all 128 are available"]);
+  items.push([ds.length > 1 ? "Domain colours" : "Domain colour", ds.length > 1 ? "the shared pack, each expert coloured by the domain that uses it most" : "its pack: experts installed only for this domain"]);
+  if (opts.view === "full") items.push(["Dim colour", "used by the full model but not installed in the pack"]);
+  if (opts.base) items.push(["White", "shared core: the experts general text uses most, installed for every domain"]);
+  items.push(["Brightness", "how much of the layer's routing that expert takes"]);
+  key.innerHTML = items.map(([a, b]) => `<li><b>${a}</b> ${b}</li>`).join("");
+  // overlap bars (single domain only)
+  const wrap = document.getElementById("barsWrap"), bars = document.getElementById("bars");
+  wrap.hidden = ds.length !== 1;
+  bars.innerHTML = "";
+  if (ds.length === 1) {
+    const d = ds[0], i = sel[0];
     doms.map((o, j) => ({ o, j })).filter(x => x.o.ready && x.j !== i)
-      .map(x => ({ ...x, v: overlap(d, x.o) })).sort((p, q) => q.v - p.v)
+      .map(x => ({ ...x, v: overlap(d, x.o) })).sort((p, r) => r.v - p.v)
       .forEach(({ o, j, v }) => {
         const b = document.createElement("button"); b.className = "bar"; b.type = "button";
         b.innerHTML = `<span class="nm">${o.label}</span><span class="tr"><i style="width:${(v * 100).toFixed(1)}%;background:${col(o, .9)}"></i></span><span class="v">${Math.round(v * 100)}%</span>`;
-        b.setAttribute("aria-label", `${o.label}: ${Math.round(v * 100)} percent of pack experts in common`);
-        b.onclick = () => select(j); bars.appendChild(b);
+        b.setAttribute("aria-label", `${o.label}: ${Math.round(v * 100)} percent of pack experts in common. Add to selection.`);
+        b.onclick = () => toggleDomain(j); bars.appendChild(b);
       });
   }
-  drawn = build(big, d, true);
-  restartAnim();
-  document.querySelectorAll(".card").forEach((c, j) => c.setAttribute("aria-current", j === i ? "true" : "false"));
-  try { localStorage.setItem("dm-domain", d.key); } catch (e) {}
+}
+
+function redraw(restart = true) {
+  drawn = build(big, sel.map(i => doms[i]), opts.view, true);
+  if (restart) restartAnim(); else if (!animOn) render(drawn, null);
+  readout();
+  document.querySelectorAll(".card").forEach((c, j) => {
+    const k = sel.indexOf(j);
+    c.setAttribute("aria-pressed", String(k >= 0));
+    c.querySelector(".pick").textContent = k >= 0 ? (sel.length > 1 ? `selected ${k + 1} of ${sel.length}` : "selected") : "";
+  });
+  try { localStorage.setItem("dm-sel", JSON.stringify(sel.map(i => doms[i].key))); } catch (e) {}
+}
+
+function toggleDomain(i) {
+  if (!doms[i].ready) return;
+  const k = sel.indexOf(i);
+  if (k >= 0) { if (sel.length > 1) sel.splice(k, 1); }
+  else { sel.push(i); if (sel.length > 3) sel.shift(); }
+  redraw();
 }
 
 function buildGrid() {
   const grid = document.getElementById("grid"); grid.innerHTML = "";
   doms.forEach((d, i) => {
     const b = document.createElement("button"); b.className = "card"; b.type = "button"; b.disabled = !d.ready;
-    b.innerHTML = `<canvas aria-hidden="true"></canvas><span class="nm">${d.label}</span><span class="st">${d.ready ? d.source : "mapping"}</span>`;
-    b.onclick = () => d.ready && select(i);
+    b.innerHTML = `<canvas aria-hidden="true"></canvas><span class="nm">${d.label}</span><span class="st">${d.ready ? d.source : "mapping"}</span><span class="pick"></span>`;
+    b.onclick = () => toggleDomain(i);
     grid.appendChild(b);
   });
   document.getElementById("progress").textContent = `${doms.filter(d => d.ready).length} of ${doms.length} mapped`;
 }
-function drawGrid() { document.querySelectorAll(".card canvas").forEach((c, i) => draw(c, doms[i], false)); }
+function drawGrid() {
+  document.querySelectorAll(".card canvas").forEach((c, i) => render(build(c, [doms[i]], "pack", false), null));
+}
 
 big.addEventListener("pointermove", ev => {
-  if (!drawn) return;
+  if (!drawn || !drawn.N) return;
   const r = big.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
   let best = null, bd = 14 * 14;
-  for (const row of drawn.N || []) for (const n of row) { const [nx, ny] = pos(drawn.g, n); const dd = (nx - x) ** 2 + (ny - y) ** 2; if (dd < bd) { bd = dd; best = n; } }
+  for (const row of drawn.N) for (const n of row) { const [nx, ny] = pos(drawn.g, n); const dd = (nx - x) ** 2 + (ny - y) ** 2; if (dd < bd) { bd = dd; best = n; } }
   if (!best) { tip.hidden = true; return; }
-  const kind = best.kind === "pack" ? "in its pack" : best.kind === "base" ? "base plate" : "would pick, not installed at 51";
+  const kind = best.kind === "pack" ? "in the pack" : best.kind === "base" ? "shared core" : "used by the full model, not installed";
   const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   const lab = DATA.labels && DATA.labels[best.l][best.e];
   const extra = lab && lab.t.length
     ? `<br><span style="color:var(--dim)">gets</span> ${lab.t.map(x => "‹" + esc(x.replace(/\n/g, "↵")) + "›").join(" ")}<br><span style="color:var(--dim)">mostly</span> ${lab.c} · <span style="color:var(--dim)">favours</span> ${esc(lab.d.replace("_", " "))}`
     : "";
-  tip.innerHTML = `layer ${best.l + 1} · expert ${best.e}<br>${(best.s * 100).toFixed(1)}% of this layer's picks · ${kind}${extra}`;
+  const who = drawn.ds.length > 1 ? ` · mostly ${best.owner.label}` : "";
+  tip.innerHTML = `layer ${best.l + 1} · expert ${best.e}<br>${(best.s * 100).toFixed(1)}% of this layer's picks · ${kind}${who}${extra}`;
   tip.hidden = false;
-  tip.style.left = Math.min(x + 14, r.width - tip.offsetWidth - 4) + "px";
-  tip.style.top = Math.min(y + 14, r.height - tip.offsetHeight - 4) + "px";
+  tip.style.left = Math.max(4, Math.min(x + 14, r.width - tip.offsetWidth - 4)) + "px";
+  tip.style.top = Math.max(4, Math.min(y + 14, r.height - tip.offsetHeight - 4)) + "px";
 });
 big.addEventListener("pointerleave", () => { tip.hidden = true; });
 
-function toggle(id, key) {
+function bindToggle(id, get, set, after) {
   const b = document.getElementById(id);
-  b.onclick = () => { opts[key] = !opts[key]; b.setAttribute("aria-pressed", String(opts[key])); select(cur); drawGrid(); };
+  b.setAttribute("aria-pressed", String(get()));
+  b.onclick = () => { set(!get()); b.setAttribute("aria-pressed", String(get())); after(); };
 }
-toggle("tBase", "base"); toggle("tAll", "all"); toggle("tIdx", "byIndex");
-const tAnim = document.getElementById("tAnim");
-tAnim.setAttribute("aria-pressed", String(animOn));
-tAnim.onclick = () => { animOn = !animOn; tAnim.setAttribute("aria-pressed", String(animOn)); restartAnim(); };
+bindToggle("tBase", () => opts.base, v => (opts.base = v), () => { redraw(false); drawGrid(); });
+bindToggle("tPref", () => opts.pref, v => (opts.pref = v), () => { redraw(false); drawGrid(); });
+bindToggle("tAnim", () => animOn, v => (animOn = v), () => restartAnim());
+for (const [id, v] of [["vFull", "full"], ["vPack", "pack"]]) {
+  document.getElementById(id).onclick = () => {
+    opts.view = v;
+    document.getElementById("vFull").setAttribute("aria-pressed", String(v === "full"));
+    document.getElementById("vPack").setAttribute("aria-pressed", String(v === "pack"));
+    redraw();
+  };
+}
 
 buildGrid();
-try { const k = localStorage.getItem("dm-domain"); const j = doms.findIndex(d => d.key === k && d.ready); if (j >= 0) cur = j; } catch (e) {}
-select(cur); drawGrid();
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { select(cur); drawGrid(); }, 150); });
-document.fonts && document.fonts.ready.then(() => { select(cur); drawGrid(); });
+try {
+  const keys = JSON.parse(localStorage.getItem("dm-sel") || "[]");
+  sel = keys.map(k => doms.findIndex(d => d.key === k && d.ready)).filter(i => i >= 0).slice(0, 3);
+} catch (e) {}
+if (!sel.length) sel = [Math.max(0, doms.findIndex(d => d.key === "geology" && d.ready))];
+redraw(); drawGrid();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { redraw(false); drawGrid(); }, 150); });
+document.fonts && document.fonts.ready.then(() => { redraw(false); drawGrid(); });
 </script>
