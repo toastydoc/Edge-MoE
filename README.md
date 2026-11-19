@@ -66,6 +66,10 @@ Ten more domains (art, history, biology, geology, politics, computer science, ec
 
 **Each domain has a stable expert fingerprint.** A pack chosen from one half of a domain's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other domains' packs. Computer science is the most distinct (41% overlap with the rest).
 
+![Expert fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
+
+*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which domains favour them. Coloured: the domain's 25-expert pack per layer; grey: the shared base plate. Line weight and dot size follow the expert's share of that layer's routing.*
+
 **Packs recover most of what trimming loses, and choosing the experts is what does it.** Loss is next-token cross-entropy on the held-out introductions, scored as the model's reply to *"Write the Wikipedia introduction for the article <title>"* (Gemma 4 instruct degenerates on bare text outside a chat turn). Extra loss over the full 128-expert model, nats per token, all at 51 experts per layer:
 
 | Domain | Full model | Base plate alone | Base + 25 random | **Own pack** | Best other pack |
@@ -84,6 +88,8 @@ Ten more domains (art, history, biology, geology, politics, computer science, ec
 
 The own pack recovers 86% of the gap between the base plate and the full model; random experts recover 49%. The remaining +0.15 nats is about 16% higher perplexity than the full model. Packs act more like neighbourhoods than single subjects: related domains swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text.
 
+![Quality at 51 experts per layer, and the break-even curve](figures/fig2_quality.png)
+
 **Break-even: one fixed model for k domains.** Base plate plus the experts k domains use most, still 51 per layer, scored on its own k domains (3 random domain sets per k, 1 for k = 10):
 
 | Domains served | 1 (own pack) | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
@@ -93,7 +99,7 @@ The own pack recovers 86% of the gap between the base plate and the full model; 
 
 Two domains share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one fixed model for all ten keeps about three quarters of a dedicated pack's gain. Swapping per domain is worth about 0.09 nats per token over that. The bumps between k = 4 and 6 are within the spread of the three sets.
 
-**What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over all 15 domains) recorded which tokens each expert receives. In layer 1, token type (numbers, punctuation, word starts) explains more of the choice of expert than the domain does; from layer 4 on, the domain explains more (mean share of expert-choice entropy: domain 5.6 / 6.3 / 5.1% in layers 1–10 / 11–20 / 21–30, token type 4.2 / 1.9 / 2.4%). Neither explains most of it. The two measures have different numbers of categories (15 and 6), so they are not directly comparable without a shuffled baseline.
+**What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over all 15 domains) recorded which tokens each expert receives. In layers 1–2 and again in the last three layers, token type (numbers, punctuation, word starts) explains more of the choice of expert than the domain does; in layers 3–27 the domain explains more (mean share of expert-choice entropy: domain 5.6 / 6.3 / 5.1% in layers 1–10 / 11–20 / 21–30, token type 4.2 / 1.9 / 2.4%). Neither explains most of it. The two measures have different numbers of categories (15 and 6), so they are not directly comparable without a shuffled baseline.
 
 **Domain maps** ([open the interactive maps](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html), also on [Claude.ai](https://claude.ai/artifact/RCQaEJswZb8Pbj3Q5oPtYM); source `viz/domain_maps.html`) draw each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in evenly spaced slots placed by which domains favour them, base plate in white and the pack in the domain's colour. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
 
@@ -136,6 +142,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Expert token pass | `scripts/profile_expert_tokens.py` |
 | Analysis tables | `scripts/analyze_domains.py` |
 | Domain maps | `scripts/export_domain_maps.py` (template in `viz/`) |
+| Paper figures (PDF, SVG, 300 dpi PNG) | `scripts/make_paper_figures.py` → `figures/` |
 | Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.

@@ -52,7 +52,8 @@ def profile_path(key: str) -> Path | None:
     return p if p.exists() else None
 
 
-def main() -> None:
+def build_data() -> dict:
+    """Everything the maps draw: slots, base plate, per-domain shares and packs, expert labels."""
     base = load_manifest(ROOT / "expert_packs" / "base.json")[1]  # [30, 128] bool
     L, E = base.shape
     ready, share = [], {}
@@ -120,6 +121,12 @@ def main() -> None:
         "slot": slot.tolist(),
         "domains": domains,
     }
+    return data
+
+
+def main() -> None:
+    data = build_data()
+    ready = [d["key"] for d in data["domains"] if d["ready"]]
     tpl = (ROOT / "viz" / "domain_maps.template.html").read_text(encoding="utf-8")
     body = tpl.replace("/*DATA*/null", json.dumps(data, separators=(",", ":")))
     # Standalone page (GitHub Pages, or opened from disk): add the document head a host would otherwise supply.
