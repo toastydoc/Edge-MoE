@@ -2,7 +2,7 @@
 
 **[Explore the interactive domain maps →](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)** Which of the model's 3,840 experts each subject uses, the full model against an 8 GB expert pack, and what the trade costs.
 
-**Research question.** How small can the *whole* memory footprint of a frontier mixture-of-experts model get, by keeping only the experts a domain uses, before its answers stop being good enough? Gemma 4 26B-A4B is the first model through this evaluation; the method applies to any MoE model with many fine-grained experts.
+**Question.** How small can the *whole* memory footprint of a frontier mixture-of-experts model get, by keeping only the experts a domain uses, before its answers stop being good enough? Gemma 4 26B-A4B is the first model through this evaluation; the method applies to any MoE model with many fine-grained experts.
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
 
