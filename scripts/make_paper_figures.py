@@ -8,6 +8,7 @@ Writes to figures/:
     fig2_quality        (a) extra loss per domain for shared core / random / own pack / best other pack,
                         (b) break-even: one fixed 51-expert model shared by k domains
     fig3_routing        what the router's choice tracks, per layer: domain vs token type
+    fig4_pack_size      blind-judged quality vs GPU weight memory as the pack budget grows (51/64/80/96 per layer)
 
 Sized for a two-column paper: full text width is 7.2 in.
 """
@@ -177,7 +178,56 @@ def fig3() -> None:
     save(fig, "fig3_routing")
 
 
+PACK_SIZES = {51: "own", 64: "own_n64", 80: "own_n80", 96: "own_n96"}
+
+
+def pack_size_summary() -> dict:
+    """Win-or-tie vs the full model at each pack budget, with bootstrap 95% intervals, plus weight memory.
+
+    Weight memory was logged at 64/80/96 per layer; every expert has the same size, so 51 and 128
+    (the full model, all experts resident) are extrapolated along the same straight line."""
+    mem = json.loads((ROOT / "results" / "judge" / "memory.json").read_text(encoding="utf-8"))
+    xs = [64, 80, 96]
+    slope, icpt = np.polyfit(xs, [mem[PACK_SIZES[n]] for n in xs], 1)
+    rng = np.random.default_rng(1)
+    rows = []
+    for n, name in PACK_SIZES.items():
+        v = [json.loads(l) for l in (ROOT / "results" / "judge" / f"verdicts_{name}_vs_full.jsonl").read_text(encoding="utf-8").splitlines()]
+        ok = np.array([r["final"] != "full" for r in v], float)
+        boots = rng.choice(ok, (2000, len(ok))).mean(1)
+        rows.append({"per_layer": n, "win": sum(r["final"] == name for r in v), "tie": sum(r["final"] == "tie" for r in v),
+                     "loss": sum(r["final"] == "full" for r in v), "win_or_tie": round(ok.mean(), 3),
+                     "ci": [round(float(np.percentile(boots, 2.5)), 3), round(float(np.percentile(boots, 97.5)), 3)],
+                     "weights_gb": mem.get(name, round(slope * n + icpt, 2)), "measured": name in mem})  # fmt: skip
+    out = {"rows": rows, "full_weights_gb": round(slope * 128 + icpt, 2), "gb_per_expert_per_layer": round(slope, 4)}
+    (ROOT / "results" / "pack_size_summary.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    return out
+
+
+def fig4() -> None:
+    s = pack_size_summary()
+    rows = s["rows"]
+    gb = [r["weights_gb"] for r in rows]
+    p = np.array([r["win_or_tie"] for r in rows]) * 100
+    lo = p - np.array([r["ci"][0] for r in rows]) * 100
+    hi = np.array([r["ci"][1] for r in rows]) * 100 - p
+    fig, ax = plt.subplots(figsize=(3.4, 2.4))
+    ax.errorbar(gb, p, yerr=[lo, hi], fmt="o-", ms=3.5, lw=1.2, capsize=2, color=(0.13, 0.42, 0.62), label="Own expert pack")
+    for r, x, y in zip(rows, gb, p):
+        ax.annotate(f"{r['per_layer']}/layer", (x, y), textcoords="offset points", xytext=(5, -9), fontsize=6.5)
+    ax.axvline(s["full_weights_gb"], ls="--", lw=0.9, color="black")
+    ax.annotate(f"Full model\n(128/layer, ~{s['full_weights_gb']:.1f} GB)", (s["full_weights_gb"], 8), textcoords="offset points",
+                xytext=(-4, 0), ha="right", fontsize=6.5)  # fmt: skip
+    ax.set_xlim(gb[0] - 1, s["full_weights_gb"] + 0.6)
+    ax.set_ylim(0, 100)
+    ax.set_xlabel("GPU weight memory (GB, 4-bit)")
+    ax.set_ylabel("Wins or ties vs full model (%)")
+    fig.tight_layout()
+    save(fig, "fig4_pack_size")
+
+
 def main() -> None:
+    fig4()
     data = build_data()
     fig1(data, dark=False)
     fig1(data, dark=True)

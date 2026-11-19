@@ -11,7 +11,8 @@ Configurations (all the same 4-bit Gemma 4 26B-A4B weights):
     shared   one fixed 51-per-layer model built for all ten domains (no swapping)
 
 Greedy decoding, batched. Writes results/judge/questions.jsonl and
-results/judge/answers_<config>.jsonl; skips questions already answered.
+results/judge/answers_<config>.jsonl (answers_<config>_n<budget>.jsonl when --budget is not 51); skips
+questions already answered. GPU memory held by the weights of each configuration goes to results/judge/memory.json.
 """
 
 import argparse
@@ -88,7 +89,8 @@ def main() -> None:
     n = args.budget
 
     for cfg in args.configs:
-        path = OUT / f"answers_{cfg}.jsonl"
+        name = cfg if n == 51 or cfg == "full" else f"{cfg}_n{n}"
+        path = OUT / f"answers_{name}.jsonl"
         done = {json.loads(l)["id"] for l in path.read_text(encoding="utf-8").splitlines()} if path.exists() else set()
         todo = [q for q in qs if q["id"] not in done]
         if not todo:
@@ -104,6 +106,12 @@ def main() -> None:
                 continue
             if cfg == "own":
                 store.install(model, base | pack_mask(prof(d), base, n / 128))
+            if cfg != "full":  # weights resident on the GPU for this configuration (before any activations)
+                torch.cuda.synchronize()
+                mem_path = OUT / "memory.json"
+                mem = json.loads(mem_path.read_text(encoding="utf-8")) if mem_path.exists() else {}
+                mem[name] = round(torch.cuda.memory_allocated() / 1e9, 2)
+                mem_path.write_text(json.dumps(mem, indent=1), encoding="utf-8")
             res = answer(model, tok, group, args.batch, args.max_new)
             with path.open("a", encoding="utf-8") as f:
                 for r in res:

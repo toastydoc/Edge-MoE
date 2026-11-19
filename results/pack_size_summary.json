@@ -1,0 +1,58 @@
+{
+ "rows": [
+  {
+   "per_layer": 51,
+   "win": 22,
+   "tie": 90,
+   "loss": 188,
+   "win_or_tie": 0.373,
+   "ci": [
+    0.317,
+    0.43
+   ],
+   "weights_gb": 6.54,
+   "measured": false
+  },
+  {
+   "per_layer": 64,
+   "win": 37,
+   "tie": 122,
+   "loss": 141,
+   "win_or_tie": 0.53,
+   "ci": [
+    0.473,
+    0.587
+   ],
+   "weights_gb": 7.84,
+   "measured": true
+  },
+  {
+   "per_layer": 80,
+   "win": 53,
+   "tie": 153,
+   "loss": 94,
+   "win_or_tie": 0.687,
+   "ci": [
+    0.633,
+    0.737
+   ],
+   "weights_gb": 9.45,
+   "measured": true
+  },
+  {
+   "per_layer": 96,
+   "win": 60,
+   "tie": 171,
+   "loss": 69,
+   "win_or_tie": 0.77,
+   "ci": [
+    0.72,
+    0.813
+   ],
+   "weights_gb": 11.04,
+   "measured": true
+  }
+ ],
+ "full_weights_gb": 14.24,
+ "gb_per_expert_per_layer": 0.1
+}

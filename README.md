@@ -8,7 +8,7 @@ The idea in one line: **map the router by domain, and shed what is not in the do
 
 **Where this fits.** Lowering GPU memory alone is a solved problem: expert offloading (what llama.cpp, LM Studio and Ollama do for MoE models) keeps every expert in system RAM and gives full-model quality on an 8 GB card. What offloading does not shrink is the total footprint: it still needs the whole model in RAM and on disk. Expert packs shrink all of it (GPU memory, system RAM and download), which matters where total memory is the limit: laptops with 8–16 GB, phones, small boards, shared-memory machines. So the project makes two claims, each tested separately:
 
-1. **On memory-limited devices, expert packs cut the whole footprint at a measured quality cost.** At 51 experts per layer the cost is real: a blind judge preferred the full model's answers most of the time (results below). The open question, being measured now, is how much budget closes the gap.
+1. **On memory-limited devices, expert packs cut the whole footprint at a measured quality cost.** The cost falls steadily as the pack budget grows: against the full model, a domain's own pack wins or ties 37% of blind-judged answers at 51 experts per layer (about 6.5 GB of weights), 53% at 64, 69% at 80 and 77% at 96 (11 GB, against about 14.2 GB for all 128). Results below.
 2. **On ordinary PCs, routing fingerprints can make offloading smarter at no quality cost:** keep the domain's pack on the GPU and offload the rest, so most expert lookups hit the GPU. This hybrid is proposed, not yet measured.
 
 Both claims rest on the same observation, which does hold: each domain has a stable routing fingerprint, and choosing experts by it beats choosing at random by a wide margin.
@@ -138,6 +138,20 @@ By domain the own pack ranges from 20% (politics) to 50% (philosophy). Two thing
 
 This revises the claim above. On these questions an 8 GB expert pack is a clearly weaker answerer than the full 26B, and the 86% recovery measured by loss overstates answer quality. The loss results still show that choosing experts by domain beats random choice by a wide margin; what they do not show is that the remaining gap is small to a reader. Raw verdicts with the judge's reasons: `results/judge/verdicts_*.jsonl`.
 
+**Pack size: how much budget buys the quality back.** The same 300 questions, answered by each domain's own pack at larger budgets (shared core unchanged, more of the domain's experts on top) and judged the same way against the full model:
+
+| Experts per layer | GPU weight memory | Pack wins | Ties | Full model wins | Pack wins or ties (95% interval) |
+|---|---|---|---|---|---|
+| 51 | ~6.5 GB* | 22 | 90 | 188 | **37%** [32%, 43%] |
+| 64 | 7.8 GB | 37 | 122 | 141 | **53%** [47%, 59%] |
+| 80 | 9.5 GB | 53 | 153 | 94 | **69%** [63%, 74%] |
+| 96 | 11.0 GB | 60 | 171 | 69 | **77%** [72%, 81%] |
+| 128 (full model) | ~14.2 GB* | | | | (reference) |
+
+![Blind-judged quality against GPU weight memory as the pack budget grows](figures/fig4_pack_size.png)
+
+\*Weight memory (4-bit weights resident on the GPU, before activations) was measured at 64, 80 and 96; every expert is the same size (0.10 GB per expert per layer across 30 layers), so 51 and 128 lie on the same line. The judge's two orders agreed on 78–84% of questions. Answers running to the 320-token limit, mostly repetition loops, fall from 37 at 51 per layer to 9, 3 and none at 96. Going from 51 to 96 experts per layer adds 4.5 GB and cuts the full model's wins from 188 to 69; at 96 per layer a domain's pack holds 75% of the experts and 77% of its answers are as good as or better than the full model's, so most of the quality returns well before the whole model does. `results/pack_size_summary.json`, `scripts/run_pack_sizes.ps1`.
+
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
@@ -177,6 +191,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Domain maps | `scripts/export_domain_maps.py` (template in `viz/`) |
 | Paper figures (PDF, SVG, 300 dpi PNG) | `scripts/make_paper_figures.py` → `figures/` |
 | Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
+| Pack-size curve (64, 80, 96 per layer) | `scripts/run_pack_sizes.ps1` (`gen_judge_answers.py --budget N`), then `scripts/make_paper_figures.py` |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
