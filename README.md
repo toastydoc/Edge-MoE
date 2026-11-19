@@ -22,7 +22,7 @@ The finding itself holds: each domain has a stable routing fingerprint, and choo
 **Roadmap, in order.**
 
 1. **Against the model that already fits.** The full 26B cannot run on the target devices, so the fair opponent is the best model of the same footprint, Gemma 4 12B (7.5 GB). Blind-judged head-to-head on the same 300 questions, packs at 51 and 64 experts per layer. *Done: at equal memory the 12B is better; with 1.1 GB more, the 64-per-layer pack beats it (results below).*
-2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try.
+2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try. *Under way: the 64-per-layer regulation pack runs in stock llama.cpp (9.2 GB, 19 tok/s CPU-only); low-end hardware next.*
 3. **How narrow, how small.** Does a narrower purpose (one regulation title rather than "law") need a smaller pack for the same quality? And since most losses so far are forgotten long-tail facts, do tasks that supply the facts in the prompt lose far less? The eCFR citation results below (right value 100%, right section 98% at 8 GB) suggest yes.
 
 **Terms.**
@@ -178,6 +178,16 @@ This revises the claim above. On these questions an 8 GB expert pack is a clearl
 
 So for this use case the pack is not a free win at the smallest size, but there is a real window: from roughly 7.8 GB of weights, a 26B expert pack answers in-domain questions better and faster than the dense model that fits the same device. Verdicts: `results/judge/verdicts_*gemma4_12b*.jsonl`; `scripts/run_vs_12b.ps1`.
 
+**On a real runtime: a pack as a standalone GGUF.** A pack is a valid, smaller Gemma 4 MoE: each layer keeps its N experts, and each router keeps only their rows (and their per-expert scales). Because the router renormalises its top 8 after the softmax, dropping the rows of experts that can never be chosen gives exactly the same choices and weights as masking them; `scripts/export_pack_checkpoint.py --check` confirms identical expert choices on all 30 layers (largest weight difference 9e-8). The first export is the regulation pack at 64 of 128 experts per layer, converted with llama.cpp's own `convert_hf_to_gguf.py` and quantised to Q4_K_M (llama.cpp b12549, unmodified):
+
+| `gemma4-26b-regulation-64e-Q4_K_M.gguf` | |
+|---|---|
+| File size | 8.56 GiB (9.2 GB); 13.8B parameters, about 4B active per token |
+| RTX 5080, all layers on the GPU | 10,600 tok/s prompt, **202 tok/s** generation |
+| Ryzen 7 9700X, CPU only, 8 threads | 135 tok/s prompt, **19 tok/s** generation |
+
+It loads and runs in stock llama.cpp with no patches and answers in-domain questions coherently. Two notes: the file is larger than the prototype's 7.8 GB because the expert down-projections (704 wide, not a multiple of 256) fall back to a less compact quantisation type, and llama.cpp's tokens per second are 40× the PyTorch prototype's, so the prototype speeds elsewhere in this README compare configurations with each other, not with a real runtime. A full-model GGUF baseline on the same runtime, and a run on genuinely low-end hardware, are next.
+
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
@@ -219,6 +229,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
 | Pack-size curve (64, 80, 96 per layer) | `scripts/run_pack_sizes.ps1` (`gen_judge_answers.py --budget N`), then `scripts/make_paper_figures.py` |
 | Head-to-head against Gemma 4 12B | `scripts/run_vs_12b.ps1` (`gen_judge_answers.py --configs gemma4_12b`) |
+| Pack as a standalone GGUF | `scripts/export_pack_checkpoint.py --domain regulation --budget 64 --check`, then llama.cpp `convert_hf_to_gguf.py <export dir> --outtype bf16` and `llama-quantize ... Q4_K_M` |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
