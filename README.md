@@ -6,12 +6,20 @@
 
 The idea in one line: **map the router by domain, and shed what is not in the domain.** We keep every router (gate), but only the expert weights a domain uses. Nothing is retrained, and there are no LoRAs.
 
-**Where this fits.** Lowering GPU memory alone is a solved problem: expert offloading (what llama.cpp, LM Studio and Ollama do for MoE models) keeps every expert in system RAM and gives full-model quality on an 8 GB card. What offloading does not shrink is the total footprint: it still needs the whole model in RAM and on disk. Expert packs shrink all of it (GPU memory, system RAM and download), which matters where total memory is the limit: laptops with 8–16 GB, phones, small boards, shared-memory machines. So the project makes two claims, each tested separately:
+**The use case.** Small, weaker hardware running a frontier model for a narrow purpose: a laptop, a small board or a shared-memory machine that cannot hold the whole 26B, doing one job (a regulation assistant, a support desk, a field manual) rather than everything.
+
+**Where this fits.** Lowering GPU memory alone is a solved problem: expert offloading (what llama.cpp, LM Studio and Ollama do for MoE models) keeps every expert in system RAM and gives full-model quality on an 8 GB card. What offloading does not shrink is the total footprint: it still needs the whole model in RAM and on disk, which is exactly what the devices above lack. Expert packs shrink all of it (GPU memory, system RAM and download). The project rests on one finding, that a domain's routing fingerprint predicts which experts its text will use, and puts it to work:
 
 1. **On memory-limited devices, expert packs cut the whole footprint at a measured quality cost.** The cost falls steadily as the pack budget grows: against the full model, a domain's own pack wins or ties 37% of blind-judged answers at 51 experts per layer (about 6.5 GB of weights), 53% at 64, 69% at 80 and 77% at 96 (11 GB, against about 14.2 GB for all 128). Results below.
-2. **On ordinary PCs, routing fingerprints can make offloading smarter at no quality cost:** keep the domain's pack on the GPU and offload the rest, so most expert lookups hit the GPU. This hybrid is proposed, not yet measured.
+2. **Parked: fingerprint-guided placement on PCs with RAM to spare** (keep the domain's predicted experts in the fastest memory, the rest in slower memory, at full quality). It serves machines outside the use case, so it waits; if revived, the measure is GPU hit rate at a fixed budget against a warm cache, since llama.cpp cannot yet place individual experts.
 
-Both claims rest on the same observation, which does hold: each domain has a stable routing fingerprint, and choosing experts by it beats choosing at random by a wide margin.
+The finding itself holds: each domain has a stable routing fingerprint, and choosing experts by it beats choosing at random by a wide margin.
+
+**Roadmap, in order.**
+
+1. **Against the model that already fits.** The full 26B cannot run on the target devices, so the fair opponent is the best model of the same footprint, Gemma 4 12B (7.5 GB). Blind-judged head-to-head on the same 300 questions, packs at 51 and 64 experts per layer. *Running.*
+2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try.
+3. **How narrow, how small.** Does a narrower purpose (one regulation title rather than "law") need a smaller pack for the same quality? And since most losses so far are forgotten long-tail facts, do tasks that supply the facts in the prompt lose far less? The eCFR citation results below (right value 100%, right section 98% at 8 GB) suggest yes.
 
 **Terms.**
 
