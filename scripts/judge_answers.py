@@ -18,7 +18,9 @@ import json
 import os
 import random
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -54,15 +56,15 @@ def call(url: str, body: dict | None = None) -> dict:
                                           "User-Agent": "edge-moe-research"})  # fmt: skip
     for attempt in range(8):
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with urllib.request.urlopen(req, timeout=300) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 503) and attempt < 7:
                 time.sleep(min(60, 5 * 2**attempt))
                 continue
             raise SystemExit(f"HTTP {e.code}: {e.read()[:300]!r}")
-        except urllib.error.URLError:
-            time.sleep(10)
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError):
+            time.sleep(min(60, 10 * (attempt + 1)))
     raise SystemExit("network failure")
 
 
@@ -90,6 +92,7 @@ def main() -> None:
     ap.add_argument("--model", default=None, help="Gemini model id; see --list-models")
     ap.add_argument("--list-models", action="store_true")
     ap.add_argument("--pairs", nargs="+", default=["own:full", "shared:full"])
+    ap.add_argument("--workers", type=int, default=8)
     args = ap.parse_args()
     if args.list_models:
         for m in call(f"{API}/models?pageSize=200")["models"]:
@@ -100,28 +103,30 @@ def main() -> None:
         sys.exit("pass --model (see --list-models)")
 
     qs = [json.loads(l) for l in (J / "questions.jsonl").read_text(encoding="utf-8").splitlines()]
-    rng = random.Random(0)
     for pair in args.pairs:
         x, y = pair.split(":")
         ax, ay = load(x), load(y)
         path = J / f"verdicts_{x}_vs_{y}.jsonl"
         done = {json.loads(l)["id"] for l in path.read_text(encoding="utf-8").splitlines()} if path.exists() else set()
-        for i, q in enumerate(qs):
-            if q["id"] in done or q["id"] not in ax or q["id"] not in ay:
-                continue
-            first_x = rng.random() < 0.5
+        todo = [q for q in qs if q["id"] not in done and q["id"] in ax and q["id"] in ay]
+        lock = threading.Lock()
+
+        def judge(q):
+            first_x = random.Random(q["id"]).random() < 0.5  # fixed per question, so reruns are reproducible
             a1, b1 = (ax[q["id"]], ay[q["id"]]) if first_x else (ay[q["id"]], ax[q["id"]])
             v1 = verdict(args.model, q["question"], a1, b1)  # x is answer A iff first_x
             v2 = verdict(args.model, q["question"], b1, a1)  # same pair, swapped
-            # map each verdict to x / y / tie
             pick = lambda v, x_is_a: "tie" if v["winner"] == "tie" else (x if (v["winner"] == "A") == x_is_a else y)  # noqa: E731
             p1, p2 = pick(v1, first_x), pick(v2, not first_x)
-            final = p1 if p1 == p2 else "tie"
-            with path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps({"id": q["id"], "domain": q["domain"], "final": final, "v1": p1, "v2": p2,
-                                    "r1": v1.get("reason", ""), "r2": v2.get("reason", "")}, ensure_ascii=False) + "\n")  # fmt: skip
-            if i % 20 == 0:
-                print(f"  {pair}: {i}/{len(qs)}", flush=True)
+            row = {"id": q["id"], "domain": q["domain"], "final": p1 if p1 == p2 else "tie", "v1": p1, "v2": p2,
+                   "r1": v1.get("reason", ""), "r2": v2.get("reason", "")}  # fmt: skip
+            with lock, path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        with ThreadPoolExecutor(args.workers) as pool:
+            for i, _ in enumerate(pool.map(judge, todo)):
+                if i % 25 == 0:
+                    print(f"  {pair}: {len(done) + i + 1}/{len(qs)}", flush=True)
         summarize(path, x, y)
 
 

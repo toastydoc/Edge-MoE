@@ -105,7 +105,19 @@ Two domains share 51 slots at no measurable cost. From four on, the curve levels
 
 **Domain maps** ([open the interactive maps](https://toastydoc.github.io/Modularized_Local_LLM-/viz/domain_maps.html), also on [Claude.ai](https://claude.ai/artifact/RCQaEJswZb8Pbj3Q5oPtYM); source `viz/domain_maps.html`) draw each domain's experts as a radial map: the router at the centre, the 30 layers as rings, each ring's 128 experts in numbered slots (optionally grouped by domain preference, the layout used in the figure above), the shared core in white and the pack in the domain's colour. Switch between the full model (every expert the domain's text reaches) and the 8 GB expert pack, select up to three domains to see them share one pack, and read the trade-off beside the map: GPU memory −48% (7.7 GB vs 14.9 GB), experts on the GPU −60%, and the measured quality cost for that selection. Hovering an expert shows its routing share and the tokens it receives. The bolts between layers are drawn for legibility; the router does not pass tokens from one specific expert to another.
 
-**Pending: blind-judged answers.** Loss measures surprise at real text, not answer quality. 300 questions written from the held-out articles (30 per domain, `results/judge/questions.jsonl`) are being answered by the full model, each domain's own pack, and one fixed model for all ten, then judged pairwise and blind by Gemini 3.1 Pro (each pair in both orders; a win counts only when both agree). Results will be added here.
+**Blind-judged answers: the quality cost is not negligible.** Loss measures surprise at real text, not answer quality, so 300 questions written from the held-out articles (30 per domain, *"In geology, what is Hyaloclastite? Explain it in one paragraph"*, `results/judge/questions.jsonl`) were answered greedily by the full model, each domain's own pack, and one fixed model for all ten, all at the same 4-bit weights. Gemini 3.1 Pro judged each pair blind, in both orders; a win counts only when both orders agree (they agreed on 87–92%).
+
+| Against the full model | Pack wins | Ties | Full model wins | Pack wins or ties (95% interval) |
+|---|---|---|---|---|
+| Each domain's own expert pack | 22 | 90 | 188 | **37%** [32%, 43%] |
+| One fixed pack for all ten domains | 13 | 72 | 215 | **28%** [23%, 33%] |
+
+By domain the own pack ranges from 20% (politics) to 50% (philosophy). Two things go wrong:
+
+- **Lost facts (most losses).** In 129 of the 188 own-pack losses the judge cites a factual error or a misidentified term, e.g. the history pack saying L. Ron Hubbard had no military career, or a pack claiming "cameo" carving does not exist. Long-tail facts appear to live in experts that a domain's prose rarely routes to, so the pack drops them even within its own domain. Prose loss barely registers this: the pack is fluent, just wrong.
+- **Repetition loops.** 23 own-pack and 42 shared answers degenerate into repeated tokens (`* * *`, `| | |`), against almost none for the full model; packs built from Wikipedia prose appear to miss experts for lists and tables. Removing every looped answer only moves the own pack from 37% to 39% win-or-tie, so loops are not the main cost.
+
+This revises the claim above. On these questions an 8 GB expert pack is a clearly weaker answerer than the full 26B, and the 86% recovery measured by loss overstates answer quality. The loss results still show that choosing experts by domain beats random choice by a wide margin; what they do not show is that the remaining gap is small to a reader. Raw verdicts with the judge's reasons: `results/judge/verdicts_*.jsonl`.
 
 ## Caveats
 
