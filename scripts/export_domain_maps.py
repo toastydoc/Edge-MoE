@@ -121,8 +121,16 @@ def main() -> None:
         "domains": domains,
     }
     tpl = (ROOT / "viz" / "domain_maps.template.html").read_text(encoding="utf-8")
+    body = tpl.replace("/*DATA*/null", json.dumps(data, separators=(",", ":")))
+    # Standalone page (GitHub Pages, or opened from disk): add the document head a host would otherwise supply.
+    head = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+            "<style>html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}body{margin:0}"
+            "img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n")  # fmt: skip
     out = ROOT / "viz" / "domain_maps.html"
-    out.write_text(tpl.replace("/*DATA*/null", json.dumps(data, separators=(",", ":"))), encoding="utf-8")
+    out.write_text(head + body + "\n</body>\n</html>\n", encoding="utf-8")
+    if len(sys.argv) > 2 and sys.argv[1] == "--artifact":
+        Path(sys.argv[2]).write_text(body, encoding="utf-8")  # body only: the artifact host adds its own head
     print(f"{len(ready)}/{len(ORDER)} domains mapped -> {out.relative_to(ROOT)} ({out.stat().st_size / 1e3:.0f} kB)")
 
 
