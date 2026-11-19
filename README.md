@@ -1,6 +1,6 @@
 # Edge-MoE: expert packs for a mixture-of-experts model
 
-![GEMMA 4 12B; Law Domain](figures/LawDomainStill.png)
+![Routing fingerprint of Gemma 4 26B-A4B, law domain](figures/LawDomainStill.png)
 
 **[Explore the interactive domain maps →](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)** Which of the model's 3,840 experts each subject uses, the full model against an 8 GB expert pack, and what the trade costs.
 
