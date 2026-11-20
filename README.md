@@ -49,6 +49,49 @@ A pack shrinks everything: GPU memory, system RAM and download size. Offloading 
 
 Choosing by fingerprint is what makes it work: at 51 experts per layer, a subject's own pack recovers 86% of the loss gap to the full model, while the same number of random experts recovers 49%.
 
+## The finding: every subject has a routing fingerprint
+
+Everything above rests on one observation: the router sends a subject's text to a consistent, recognisable set of experts. Ten subjects were built from Wikipedia article introductions (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy): five categories per subject, articles found under two subjects dropped from both, then split by article into 249–300 profiling articles and 83–100 held-out test articles per subject. One source for all ten keeps the comparison about topic, not writing style.
+
+**The fingerprint is stable.** A pack chosen from one half of a subject's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other subjects' packs. Computer science is the most distinct (41% overlap with the rest).
+
+![Routing fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
+
+*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which subjects favour them. Coloured: the subject's 25-expert pack per layer; grey: the shared core. Line weight and dot size follow the expert's share of that layer's routing.*
+
+**The fingerprint predicts which experts held-out text needs.** Loss is next-token cross-entropy on the held-out introductions, scored as the model's reply to *"Write the Wikipedia introduction for the article <title>"* (Gemma 4 instruct degenerates on bare text outside a chat turn). Extra loss over the full 128-expert model, nats per token, all at 51 experts per layer:
+
+| Subject | Full model | Shared core alone | Shared core + 25 random | **Own pack** | Best other pack |
+|---|---|---|---|---|---|
+| art | 3.37 | +1.33 | +0.69 | **+0.24** | history +0.29 |
+| history | 3.05 | +1.64 | +0.94 | **+0.23** | art +0.36 |
+| biology | 3.15 | +0.82 | +0.38 | **+0.06** | chemistry +0.08 |
+| geology | 3.18 | +1.04 | +0.52 | **+0.10** | biology +0.16 |
+| politics | 3.21 | +1.13 | +0.55 | +0.17 | **history +0.16** |
+| computer science | 3.18 | +1.38 | +0.74 | **+0.24** | physics +0.52 |
+| economics | 3.14 | +1.04 | +0.51 | **+0.14** | politics +0.17 |
+| chemistry | 3.06 | +0.89 | +0.43 | **+0.05** | geology +0.11 |
+| physics | 2.96 | +0.94 | +0.46 | **+0.10** | chemistry +0.12 |
+| philosophy | 3.29 | +0.90 | +0.40 | +0.19 | **history +0.17** |
+| **mean** | 3.16 | +1.11 | +0.56 | **+0.15** | +0.21 |
+
+The own pack recovers 86% of the gap between the shared core and the full model; random experts recover 49%. Packs act more like neighbourhoods than single subjects: related subjects swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text. Loss measures surprise at real text, not answer quality, and it understates what a small pack loses; the blind-judged answers in [the result](#the-result) are the measure that counts.
+
+![Quality at 51 experts per layer, and the break-even curve](figures/fig2_quality.png)
+
+**Subjects can share a pack.** Shared core plus the experts k subjects use most, still 51 per layer, scored on its own k subjects (3 random subject sets per k, 1 for k = 10):
+
+| Subjects served | 1 (own pack) | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
+|---|---|---|---|---|---|---|---|---|
+| Extra loss (nats/token) | +0.153 | +0.156 | +0.192 | +0.239 | +0.218 | +0.203 | +0.240 | +0.246 |
+| Share of the pack's gain over random kept | 100% | 99% | 91% | 79% | 84% | 88% | 79% | 77% |
+
+Two subjects share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one shared pack for all ten keeps about three quarters of a dedicated pack's gain.
+
+**What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over 15 subjects) recorded which tokens each expert receives. In layers 1–2 and the last three layers, token type (numbers, punctuation, word starts) explains more of the choice of expert than the subject does; in layers 3–27 the subject explains more. Neither explains most of it. So the fingerprint lives mainly in the middle of the network.
+
+**See it yourself.** The [interactive domain maps](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html) draw each subject's experts the same way: switch between the full model (every expert the subject's text reaches) and the pack, select up to three subjects to see them share one pack, and hover an expert to see its routing share and the tokens it receives.
+
 ## Try it
 
 Export a pack as a standalone checkpoint, convert it with llama.cpp's own converter and run it in stock llama.cpp (b12549, unmodified):
@@ -72,17 +115,6 @@ llama-cli -m exports/gemma4-26b-regulation-64e-Q4_K_M.gguf --jinja
 `--check` confirms identical expert choices on all 30 layers before writing. The model's own chat template (`--jinja`) is required. The 64-per-layer regulation pack is 9.2 GB at Q4_K_M and runs at 202 tokens per second on an RTX 5080 and 19 tokens per second on a Ryzen 7 9700X with no GPU. Its file is larger than the prototype's 7.8 GB because the expert down-projections (704 wide, not a multiple of 256) fall back to a less compact quantisation type; Q3_K_M brings it to 7.37 GB.
 
 ## Supporting evidence
-
-<details>
-<summary><b>Routing fingerprints and loss: choosing experts by subject beats choosing at random</b></summary>
-
-Ten subjects from Wikipedia article introductions (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy), split by article into profiling and held-out test sets.
-
-![Routing fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
-
-Extra loss over the full model on held-out text, nats per token, all at 51 experts per layer, averaged over the ten subjects: shared core alone +1.11, shared core plus 25 random experts +0.56, **own pack +0.15**, best other subject's pack +0.21. Related subjects swap well (chemistry's pack serves biology almost as well as biology's). Per-subject tables, the break-even curve for one pack shared by several subjects, and the token-type analysis are in the [lab notebook](docs/EXPERIMENTS.md).
-
-</details>
 
 <details>
 <summary><b>Real tasks: 122 held-out eCFR regulation tasks at 8 GB</b></summary>
