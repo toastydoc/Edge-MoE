@@ -4,62 +4,19 @@
 <img src="figures/LawDomainStill.png" alt="Routing fingerprint of Gemma 4 26B-A4B, law domain" width="300">
 </p>
 
-**Every subject has a routing fingerprint inside a mixture-of-experts model, and you can cut the model down to the experts a subject uses, keep the routers, and still run it in stock llama.cpp.**
+**Map which experts a subject's text is routed to, and you can cut a big mixture-of-experts model down to a smaller, subject-focused model with no retraining and no LoRA. The same map draws each subject's routing fingerprint inside the model, and shows where subjects overlap.**
 
-Edge-MoE maps which of Gemma 4 26B-A4B's 3,840 experts each subject's text is routed to, and uses that map to build an *expert pack*: the shared core of the model plus only the experts one subject needs. The routers are sliced to match, so the pack is a valid, smaller Gemma 4 model. Nothing is retrained.
+Edge-MoE does this for Gemma 4 26B-A4B (30 layers × 128 experts). The model it produces keeps its routers, drops the experts its subject doesn't use, and runs in stock llama.cpp in about half the memory, without offloading.
 
-**[Explore the interactive domain maps →](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)** Every subject's routing fingerprint, drawn layer by layer, and what keeping only those experts costs.
+**[Explore the interactive domain maps →](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)**
 
-## 1. Every subject has a routing fingerprint
+## 1. A subject-focused model, without retraining
 
-The router sends a subject's text to a consistent, recognisable set of experts. Ten subjects were built from Wikipedia article introductions (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy): five categories per subject, articles found under two subjects dropped from both, then split by article into 249–300 profiling articles and 83–100 held-out test articles per subject. One source for all ten keeps the comparison about topic, not writing style.
-
-**The fingerprint is stable.** A pack chosen from one half of a subject's profiling articles shares 86% of its experts (Jaccard) with the pack chosen from the other half, against 50% with other subjects' packs. Computer science is the most distinct (41% overlap with the rest).
-
-![Routing fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
-
-*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which subjects favour them. Coloured: the subject's 25-expert pack per layer; grey: the shared core. Line weight and dot size follow the expert's share of that layer's routing.*
-
-**The fingerprint predicts which experts held-out text needs.** Loss is next-token cross-entropy on the held-out introductions, scored as the model's reply to *"Write the Wikipedia introduction for the article <title>"* (Gemma 4 instruct degenerates on bare text outside a chat turn). Extra loss over the full 128-expert model, nats per token, all at 51 experts per layer:
-
-| Subject | Full model | Shared core alone | Shared core + 25 random | **Own pack** | Best other pack |
-|---|---|---|---|---|---|
-| art | 3.37 | +1.33 | +0.69 | **+0.24** | history +0.29 |
-| history | 3.05 | +1.64 | +0.94 | **+0.23** | art +0.36 |
-| biology | 3.15 | +0.82 | +0.38 | **+0.06** | chemistry +0.08 |
-| geology | 3.18 | +1.04 | +0.52 | **+0.10** | biology +0.16 |
-| politics | 3.21 | +1.13 | +0.55 | +0.17 | **history +0.16** |
-| computer science | 3.18 | +1.38 | +0.74 | **+0.24** | physics +0.52 |
-| economics | 3.14 | +1.04 | +0.51 | **+0.14** | politics +0.17 |
-| chemistry | 3.06 | +0.89 | +0.43 | **+0.05** | geology +0.11 |
-| physics | 2.96 | +0.94 | +0.46 | **+0.10** | chemistry +0.12 |
-| philosophy | 3.29 | +0.90 | +0.40 | +0.19 | **history +0.17** |
-| **mean** | 3.16 | +1.11 | +0.56 | **+0.15** | +0.21 |
-
-The own pack recovers 86% of the gap between the shared core and the full model; random experts recover 49%. Packs act more like neighbourhoods than single subjects: related subjects swap well (chemistry's pack serves biology almost as well as biology's), and the history pack beat the politics and philosophy packs on their own text. Loss measures surprise at real text, not answer quality, and it understates what a small pack loses; the blind-judged answers [below](#2-keep-the-routers-drop-the-experts-it-still-runs) are the measure that counts.
-
-![Quality at 51 experts per layer, and the break-even curve](figures/fig2_quality.png)
-
-**Subjects can share a pack.** Shared core plus the experts k subjects use most, still 51 per layer, scored on its own k subjects (3 random subject sets per k, 1 for k = 10):
-
-| Subjects served | 1 (own pack) | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
-|---|---|---|---|---|---|---|---|---|
-| Extra loss (nats/token) | +0.153 | +0.156 | +0.192 | +0.239 | +0.218 | +0.203 | +0.240 | +0.246 |
-| Share of the pack's gain over random kept | 100% | 99% | 91% | 79% | 84% | 88% | 79% | 77% |
-
-Two subjects share 51 slots at no measurable cost. From four on, the curve levels off near 80% instead of falling toward random: one shared pack for all ten keeps about three quarters of a dedicated pack's gain.
-
-**What the router's choice tracks.** A token pass (`scripts/profile_expert_tokens.py`, 900 prompts over 15 subjects) recorded which tokens each expert receives. In layers 1–2 and the last three layers, token type (numbers, punctuation, word starts) explains more of the choice of expert than the subject does; in layers 3–27 the subject explains more. Neither explains most of it. So the fingerprint lives mainly in the middle of the network.
-
-**See it yourself.** The [interactive domain maps](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html) draw each subject's experts the same way: switch between the full model (every expert the subject's text reaches) and the pack, select up to three subjects to see them share one pack, and hover an expert to see its routing share and the tokens it receives.
-
-## 2. Keep the routers, drop the experts: it still runs
-
-1. **Profile.** Run a subject's text through the model and count which experts the router picks in each of the 30 layers.
-2. **Keep the shared core plus the subject's pack.** Everything that is not an expert (attention, embeddings, routers), the experts general text uses most, and the subject's most used experts on top, up to N of 128 experts per layer.
+1. **Map.** Run a subject's text through the model and count which experts the router picks in each of the 30 layers.
+2. **Keep the shared core plus the subject's experts.** Everything that is not an expert (attention, embeddings, routers), the experts general text uses most, and the subject's most used experts on top, up to N of 128 per layer. This set is the subject's *expert pack*.
 3. **Slice the routers to match.** The router takes a softmax over all experts, keeps the top 8 and renormalises them, so dropping the rows of experts that are not kept gives exactly the same choices and weights as masking them. The export script checks this on all 30 layers before writing.
 
-The result is an ordinary Gemma 4 checkpoint with fewer experts per layer. llama.cpp's own converter turns it into a GGUF and stock llama.cpp (b12549, unmodified) runs it:
+The result is an ordinary Gemma 4 checkpoint with fewer experts per layer. llama.cpp's own converter turns it into a GGUF, and stock llama.cpp (b12549, unmodified) runs it:
 
 | Model | Experts per layer | File (GGUF) | RTX 5080 | Ryzen 7 9700X, no GPU |
 |---|---|---|---|---|
@@ -71,9 +28,25 @@ The result is an ordinary Gemma 4 checkpoint with fewer experts per layer. llama
 
 Squeezing the full model to 10.6 GB with standard quantisation breaks it; dropping half the experts and keeping the routers gives a working model at 7.4 GB.
 
+**Not offloading.** Offloading keeps every expert and moves the ones the GPU can't hold into system RAM: full quality, but the whole model still has to fit in RAM and on disk. A pack removes the experts its subject doesn't use, so GPU memory, RAM and download all shrink.
+
 **What it costs.** A pack answers its own subject well and other subjects poorly. Against the full 26B on 300 blind-judged questions from held-out Wikipedia articles (each subject's questions to that subject's pack; Gemini 3.1 Pro judging both orders, a win only when both agree), a pack wins or ties 37% of answers at 51 experts per layer, 53% at 64, 69% at 80 and 77% at 96. Most of its losses are long-tail facts it dropped, not fluency.
 
-Choosing by fingerprint is what makes it work: at 51 experts per layer a subject's own pack recovers 86% of the loss gap to the full model, while the same number of random experts recovers 49%.
+**The map is what makes it work.** At 51 experts per layer, a subject's own pack recovers 86% of the gap in prediction loss between the shared core alone and the full model; the same number of randomly chosen experts recovers 49%.
+
+## 2. Every subject has a routing fingerprint
+
+Ten subjects were built from Wikipedia article introductions (art, history, biology, geology, politics, computer science, economics, chemistry, physics, philosophy), one source for all ten so the comparison is about topic, not writing style. Each subject's map is its *routing fingerprint*: which experts its text reaches in every layer.
+
+![Routing fingerprints of the ten Wikipedia domains](figures/fig1_fingerprints.png)
+
+*Each map: router at the centre, the 30 layers as rings, every ring's 128 experts in evenly spaced slots placed by which subjects favour them. Coloured: the subject's 25-expert pack per layer; grey: the shared core. Line weight and dot size follow the expert's share of that layer's routing.*
+
+- **Fingerprints are stable.** The pack chosen from one half of a subject's articles shares 86% of its experts with the pack chosen from the other half, against 50% with other subjects' packs.
+- **Some subjects stand apart.** Computer science is the most distinct (41% overlap with the rest).
+- **Others overlap into neighbourhoods.** Related subjects share experts: chemistry's pack serves biology almost as well as biology's own, and two related subjects can share one pack at almost no cost.
+
+**[The interactive maps](https://toastydoc.github.io/Edge-MoE/viz/domain_maps.html)** draw all fifteen mapped subjects this way. Switch between the full model (every expert a subject reaches) and its pack, select up to three subjects to see where they overlap, and hover an expert to see its routing share and the tokens it receives.
 
 ## Try it
 
@@ -103,7 +76,6 @@ llama-cli -m exports/gemma4-26b-regulation-64e-Q4_K_M.gguf --jinja
 - **Not a better small model.** At the same file size on llama.cpp, the dense Gemma 4 12B answers general questions somewhat better than a pack (114 to 69 at 7.4 GB); a pack generates 2–3× faster. Full comparison in the [lab notebook](docs/EXPERIMENTS.md#against-gemma-4-12b-the-dense-model-of-about-the-same-size).
 - **One model so far.** Gemma 4 26B-A4B is the only model tested; the method should apply to any MoE with many fine-grained experts.
 - **One judge.** Answer quality is judged by Gemini 3.1 Pro on 300 encyclopedic questions; agreement between the judge's two orders was 78–92%.
-- **Untried:** importance-matrix (imatrix) quantisation, which might make the full model usable at ~10 GB.
 
 ## Prior work
 
@@ -124,6 +96,6 @@ Python 3.12 and CUDA 12.8, then `pip install -r requirements.txt`. Gemma models 
 | Figures | `scripts/make_paper_figures.py` |
 | Domain maps | `scripts/export_domain_maps.py` (template in `viz/`) |
 
-Every other experiment (comparisons with Gemma 4 12B, MMLU, eCFR tasks, offloading, shared packs, pack selectors) and its scripts are listed in the [lab notebook](docs/EXPERIMENTS.md). The repository includes the expert-usage profiles, pack manifests, test sets and every result with per-question outputs (`results/`).
+Every other experiment (per-subject loss tables, shared packs, what the router's choice tracks, comparisons with Gemma 4 12B, MMLU, eCFR tasks, offloading, pack selectors) and its scripts are listed in the [lab notebook](docs/EXPERIMENTS.md). The repository includes the expert-usage profiles, pack manifests, test sets and every result with per-question outputs (`results/`).
 
 Data sources: MMLU (MIT licence), the eCFR (US federal regulations, public domain), and Wikipedia article introductions (`data/test/wiki_*.jsonl`, CC BY-SA 4.0, © Wikipedia contributors; each row names its article). Model weights are subject to the [Gemma terms of use](https://ai.google.dev/gemma/terms); none are redistributed here.
