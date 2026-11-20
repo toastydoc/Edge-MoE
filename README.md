@@ -22,7 +22,7 @@ The finding itself holds: each domain has a stable routing fingerprint, and choo
 **Roadmap, in order.**
 
 1. **Against the model that already fits.** The full 26B cannot run on the target devices, so the fair opponent is the best model of the same footprint, Gemma 4 12B (7.5 GB). Blind-judged head-to-head on the same 300 questions, packs at 51 and 64 experts per layer. *Done: at equal memory the 12B is better; with 1.1 GB more, the 64-per-layer pack beats it (results below).*
-2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try. *Under way: the 64-per-layer regulation pack runs in stock llama.cpp (9.2 GB, 19 tok/s CPU-only), and a 4.07 GB 32-per-layer pack runs on a 2016 4-core AMD A12 with 6.7 GB RAM at 3.1 tok/s, though answers at that size are weak.*
+2. **On a real runtime.** A pack is a valid smaller MoE (N experts per layer, routers sliced to match), so it can be exported as a standalone GGUF and run in llama.cpp on CPU or a small GPU, for true footprint and speed numbers and a file people can try. *Under way: the 64-per-layer regulation pack runs in stock llama.cpp (9.2 GB, 19 tok/s CPU-only); a size-matched pack vs 12B comparison on llama.cpp is running.*
 3. **How narrow, how small.** Does a narrower purpose (one regulation title rather than "law") need a smaller pack for the same quality? And since most losses so far are forgotten long-tail facts, do tasks that supply the facts in the prompt lose far less? The eCFR citation results below (right value 100%, right section 98% at 8 GB) suggest yes.
 
 **Terms.**
@@ -188,17 +188,6 @@ So for this use case the pack is not a free win at the smallest size, but there 
 
 It loads and runs in stock llama.cpp with no patches and answers in-domain questions coherently. Two notes: the file is larger than the prototype's 7.8 GB because the expert down-projections (704 wide, not a multiple of 256) fall back to a less compact quantisation type, and llama.cpp's tokens per second are 40× the PyTorch prototype's, so the prototype speeds elsewhere in this README compare configurations with each other, not with a real runtime.
 
-**On genuinely low-end hardware.** To fit a 2016-era all-in-one with 6.7 GB of RAM, the regulation pack was cut to 32 of 128 experts per layer and quantised to Q3_K_S (router check passed again; Q3_K_M looped at temperature 0, so the smaller type was kept):
-
-| `gemma4-26b-regulation-32e-Q3_K_S.gguf` | |
-|---|---|
-| File size | 3.78 GiB (4.07 GB); 8.1B parameters, about 4B active per token |
-| AMD A12-9730P (4 cores, AVX2), 6.7 GB RAM, HDD, CPU only, Ubuntu 26.04 | 9.3 tok/s prompt, **3.1 tok/s** generation |
-| Ryzen 7 9700X, CPU only, 4 threads (same file) | 94 tok/s prompt, 23 tok/s generation |
-| Memory on the A12 | peak RSS 5.3 GB (model is mmapped), lowest free 4.2 GB, swap +0.35 GB, no thrashing; about 1 minute to load from the HDD |
-
-A 26B-class MoE runs on that machine at a readable 3 tokens per second. Two limits: it only fits with the desktop otherwise idle (with the Claude app open, Ubuntu's memory monitor killed the run during loading), and 32 experts per layer is below every pack size measured for quality. Its answer to a NESHAP question was fluent and opened correctly, then trailed into a run-on that never said who must comply; on the 9700X the same file gave a cleaner answer. Treat it as proof that the footprint reaches this class of hardware, not as a usable assistant at this size. A full-model GGUF baseline on the same runtime is next.
-
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.
@@ -240,7 +229,7 @@ Use Python 3.12 and CUDA 12.8 (RTX 50-series), then `pip install -r requirements
 | Blind-judged answers | `scripts/gen_judge_answers.py`, then `scripts/judge_answers.py` with `GEMINI_API_KEY` set |
 | Pack-size curve (64, 80, 96 per layer) | `scripts/run_pack_sizes.ps1` (`gen_judge_answers.py --budget N`), then `scripts/make_paper_figures.py` |
 | Head-to-head against Gemma 4 12B | `scripts/run_vs_12b.ps1` (`gen_judge_answers.py --configs gemma4_12b`) |
-| Pack as a standalone GGUF | `scripts/export_pack_checkpoint.py --domain regulation --budget 64 --check`, then llama.cpp `convert_hf_to_gguf.py <export dir> --outtype bf16` and `llama-quantize ... Q4_K_M` (low-end pack: `--budget 32`, `Q3_K_S`) |
+| Pack as a standalone GGUF | `scripts/export_pack_checkpoint.py --domain regulation --budget 64 --check`, then llama.cpp `convert_hf_to_gguf.py <export dir> --outtype bf16` and `llama-quantize ... Q4_K_M` |
 
 The repository includes the expert-usage profiles (`profiles*/`), the pack manifests and selectors (`expert_packs/`), the test sets (`data/test/`, `data/policy/tasks*.jsonl`) and every result with per-question outputs (`results/`). The `train_*` and `distill` scripts are earlier experiments with trained packs; the packaging approach above does not use them.
 
