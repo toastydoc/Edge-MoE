@@ -44,7 +44,26 @@ ORDER = [
     ("computer_science", "Computer science", "Wikipedia"),
 ]
 WIKI = {"politics", "economics", "history", "philosophy", "art", "biology", "chemistry", "geology", "physics", "computer_science"}
-BUDGET = 51
+BUDGETS = (64, 51)  # pack sizes the page can show, experts per layer; the first is the default view
+# Blind-judged verdict files per budget (results/judge/): own pack vs the full 26B, own pack vs Gemma 4 12B.
+VERDICTS = {51: ("verdicts_own_vs_full", "verdicts_own_vs_gemma4_12b"),
+            64: ("verdicts_own_n64_vs_full", "verdicts_own_n64_vs_gemma4_12b")}  # fmt: skip
+
+
+def judged(name: str) -> dict:
+    """Per-domain and overall win-or-tie of the first configuration (a win counts only when both orders agree)."""
+    p = ROOT / "results" / "judge" / f"{name}.jsonl"
+    if not p.exists():
+        return {}
+    first = name.removeprefix("verdicts_").split("_vs_")[0]
+    rows = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines()]
+    out = {}
+    for d in sorted({r["domain"] for r in rows}) + ["all"]:
+        rs = [r for r in rows if d == "all" or r["domain"] == d]
+        w = sum(r["final"] == first for r in rs)
+        t = sum(r["final"] == "tie" for r in rs)
+        out[d] = {"wt": round((w + t) / len(rs), 3), "w": w, "t": t, "l": len(rs) - w - t, "n": len(rs)}
+    return out
 
 
 def profile_path(key: str) -> Path | None:
@@ -85,10 +104,11 @@ def build_data() -> dict:
     for key, label, source in ORDER:
         entry = {"key": key, "label": label, "source": source, "anchor": anchor[key], "ready": key in ready}
         if key in ready:
-            pk = pack_mask(torch.as_tensor(share[key]), base, BUDGET / 128).numpy()
             entry["share"] = np.round(share[key] * 1e4).astype(int).tolist()  # basis points
-            entry["pack"] = [np.flatnonzero(pk[l]).tolist() for l in range(L)]
-            entry["pack_mass"] = float((share[key] * (pk | base.numpy())).sum(1).mean())
+            entry["packs"] = {}
+            for b in BUDGETS:  # same selection as the judged runs: shared core | pack_mask(profile, core, b/128)
+                pk = pack_mask(torch.as_tensor(share[key]), base, b / 128).numpy()
+                entry["packs"][str(b)] = [np.flatnonzero(pk[l]).tolist() for l in range(L)]
         domains.append(entry)
 
     # Expert labels from the token pass: what text each expert receives.
@@ -112,9 +132,16 @@ def build_data() -> dict:
                 })  # fmt: skip
             labels.append(row)
 
-    # Trade-off figures shown beside the map. Memory: peak GPU memory in use, from the README
-    # (full 26B 4-bit on MMLU: 14.9 GB; 51 experts per layer: 7.7 GB). Quality: results/domain_summary.json.
-    tradeoff = {"gpu_full_gb": 14.9, "gpu_packed_gb": 7.7, "quality": {}, "shared": {}}
+    # Trade-off figures shown beside the map. Memory: 4-bit weights held in memory (results/pack_size_summary.json:
+    # measured at 64, on the same per-expert line at 51 and 128). Judged: blind Gemini verdicts per domain.
+    # Loss: results/domain_summary.json (measured at 51 per layer only).
+    tradeoff = {"weights_full_gb": 14.24, "weights_12b_gb": 6.74, "weights_gb": {}, "judged": {}, "quality": {}, "shared": {}}
+    ps = ROOT / "results" / "pack_size_summary.json"
+    if ps.exists():
+        rows = json.loads(ps.read_text(encoding="utf-8"))["rows"]
+        tradeoff["weights_gb"] = {str(r["per_layer"]): r["weights_gb"] for r in rows if r["per_layer"] in BUDGETS}
+    for b, (vf, v12) in VERDICTS.items():
+        tradeoff["judged"][str(b)] = {"full": judged(vf), "12b": judged(v12)}
     sp = ROOT / "results" / "domain_summary.json"
     if sp.exists():
         summ = json.loads(sp.read_text(encoding="utf-8"))
@@ -128,7 +155,7 @@ def build_data() -> dict:
         "labels": labels,
         "layers": L,
         "experts": E,
-        "budget": BUDGET,
+        "budgets": list(BUDGETS),
         "base": [np.flatnonzero(base[l].numpy()).tolist() for l in range(L)],
         "slot": slot.tolist(),
         "domains": domains,

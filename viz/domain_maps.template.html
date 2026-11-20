@@ -87,7 +87,8 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
     <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts · expert packs</div>
     <h1>Where the router sends each domain</h1>
     <p class="proj"><a href="https://github.com/toastydoc/Edge-MoE">Code, data and results on GitHub →</a></p>
-    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a domain's text is routed to, layer by layer: its routing fingerprint. Compare what the full model uses with what an 8 GB expert pack keeps, for one domain or up to three in a shared pack.</p>
+    <p class="lede"><b style="color:var(--ink);font-weight:500">Keep only the experts one subject uses, and Gemma 4 26B beats Gemma 4 12B, the dense model that fits the same mid-range machine.</b> At 64 of 128 experts per layer (7.8 GB of weights) each subject's expert pack wins or ties 74% of blind-judged questions against the 12B, in all ten subjects, and computes about 4B parameters per token against the 12B's 12B.</p>
+    <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a subject's text is routed to, layer by layer: its routing fingerprint. Compare what the full model uses with what a pack keeps, for one subject or up to three sharing one pack.</p>
   </header>
 
   <section class="stage">
@@ -102,7 +103,14 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
         <p class="sec-label">View</p>
         <div class="seg" role="group" aria-label="Which model to draw">
           <button type="button" id="vFull" aria-pressed="false">Full model</button>
-          <button type="button" id="vPack" aria-pressed="true">Expert pack (8 GB)</button>
+          <button type="button" id="vPack" aria-pressed="true">Expert pack</button>
+        </div>
+      </div>
+      <div>
+        <p class="sec-label">Pack size, experts per layer</p>
+        <div class="seg" role="group" aria-label="Pack size">
+          <button type="button" id="b64" aria-pressed="true">64 · 7.8 GB</button>
+          <button type="button" id="b51" aria-pressed="false">51 · 6.5 GB</button>
         </div>
       </div>
       <div class="toggles" role="group" aria-label="Overlays">
@@ -112,15 +120,17 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
       </div>
 
       <div>
-        <p class="sec-label">Trade-off at a pack budget of 51 experts per layer</p>
+        <p class="sec-label" id="tradeLabel">Trade-off at 64 experts per layer</p>
         <div class="trade">
-          <div class="cell"><b class="gain" id="mGpu">−48%</b><span id="mGpuTxt">GPU memory: 7.7 GB instead of 14.9 GB</span></div>
-          <div class="cell"><b class="gain">−60%</b><span>experts on the GPU: 51 of 128 per layer</span></div>
-          <div class="cell"><b id="mMass">—</b><span id="mMassTxt">of this domain's routing lands on installed experts</span></div>
-          <div class="cell"><b class="cost" id="mQual">—</b><span id="mQualTxt">quality cost</span></div>
+          <div class="cell"><b class="gain" id="mGpu">—</b><span id="mGpuTxt">weights in memory</span></div>
+          <div class="cell"><b class="gain" id="mExp">—</b><span id="mExpTxt">experts kept per layer</span></div>
+          <div class="cell"><b id="m12">—</b><span id="m12Txt">vs Gemma 4 12B</span></div>
+          <div class="cell"><b id="mFull">—</b><span id="mFullTxt">vs the full 26B</span></div>
+          <div class="cell"><b id="mMass">—</b><span id="mMassTxt">of this subject's routing lands on kept experts</span></div>
+          <div class="cell"><b class="cost" id="mQual">—</b><span id="mQualTxt">loss on held-out text</span></div>
         </div>
       </div>
-      <p class="note" id="tradeNote">Judged blind against the full model on 300 questions, a domain's own pack wins or ties 37% of the time (one pack for all ten: 28%); most losses are factual errors. Larger packs buy it back: 53% at 64 experts per layer, 69% at 80, 77% at 96 (11 GB of weights against 14.2 GB). The other experts stay in RAM or on disk only if you want to switch packs; a device for one domain needs just the shared core and its pack.</p>
+      <p class="note" id="tradeNote"></p>
 
       <ul class="key" id="key"></ul>
 
@@ -137,41 +147,42 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
   </section>
 
   <footer>
-    <p>Routing shares come from profiling each domain's text through the full model and counting the top-8 expert picks per token. An expert pack holds a domain's most used experts outside the shared core, up to 51 per layer in total. A shared pack serves several domains by taking the experts they use most together, within the same budget of 51 per layer.</p>
-    <p>Quality cost is extra next-token loss on each domain's held-out Wikipedia text versus the full model; for two or three domains it is the average measured over random sets of that size, not for this exact combination. Memory is peak GPU memory in use. The bolts between layers are drawn for legibility: the router does not pass tokens from one particular expert to another.</p>
+    <p>Routing shares come from profiling each subject's text through the full model and counting the top-8 expert picks per token. An expert pack holds the shared core plus the subject's most used experts, up to the chosen size per layer. A shared pack serves several subjects by taking the experts they use most together, within the same size.</p>
+    <p>Judged quality: 300 questions written from held-out Wikipedia articles, 30 per subject, each answered by that subject's own pack; Gemini 3.1 Pro compared each pair blind in both orders, and a win counts only when both orders agree. Per-subject figures rest on 30 questions each, so treat single subjects as rough. Loss is extra next-token loss on held-out text versus the full model, measured at 51 per layer only; for two or three subjects it is the average over random sets of that size. Memory is 4-bit weights held in memory, before activations. The bolts between layers are drawn for legibility: the router does not pass tokens from one particular expert to another.</p>
     <p>Project, method and full results: <a href="https://github.com/toastydoc/Edge-MoE">github.com/toastydoc/Edge-MoE</a></p>
   </footer>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
-const L = DATA.layers, E = DATA.experts, N_INST = DATA.budget;
+const L = DATA.layers, E = DATA.experts;
 const doms = DATA.domains;
-const TO = DATA.tradeoff || { quality: {}, shared: {} };
+const TO = DATA.tradeoff || { quality: {}, shared: {}, judged: {}, weights_gb: {} };
 const hue = d => Math.round(((d.anchor + Math.PI / 2) / (2 * Math.PI)) * 360 + 360) % 360;
 const col = (d, a, light = 62) => `hsla(${hue(d)}, 95%, ${light}%, ${a})`;
 const baseSet = DATA.base.map(ids => new Set(ids));
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let opts = { base: true, pref: false, view: "pack" };
+let opts = { base: true, pref: false, view: "pack", budget: DATA.budgets[0] };
+const packOf = d => d.packs[String(opts.budget)];
 let sel = [];   // indices of selected domains, at most 3; the first is the primary
 // Every layer's 128 experts sit in 128 evenly spaced slots, by expert number unless grouped by domain preference.
 const angOf = (l, e) => ((opts.pref ? DATA.slot[l][e] : e) / E) * 2 * Math.PI - Math.PI / 2;
 
 function rnd(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-// Installed experts for a set of domains: shared core + the experts they use most together, 51 per layer.
+// Installed experts for a set of domains: shared core + the experts they use most together, opts.budget per layer.
 const instCache = new Map();
 function installed(ds) {
-  const key = ds.map(d => d.key).sort().join("+");
+  const key = opts.budget + ":" + ds.map(d => d.key).sort().join("+");
   if (instCache.has(key)) return instCache.get(key);
   const out = [];
   for (let l = 0; l < L; l++) {
     const s = new Set(baseSet[l]);
-    if (ds.length === 1) for (const e of ds[0].pack[l]) s.add(e);
+    if (ds.length === 1) for (const e of packOf(ds[0])[l]) s.add(e);
     else {
       const score = Array.from({ length: E }, (_, e) => ds.reduce((t, d) => t + d.share[l][e], 0));
       const ranked = [...Array(E).keys()].filter(e => !s.has(e)).sort((a, b) => score[b] - score[a]);
-      for (const e of ranked.slice(0, N_INST - s.size)) s.add(e);
+      for (const e of ranked.slice(0, opts.budget - s.size)) s.add(e);
     }
     out.push(s);
   }
@@ -334,7 +345,8 @@ function restartAnim() {
 
 function overlap(a, b) {
   let inter = 0, uni = 0;
-  for (let l = 0; l < L; l++) { const A = new Set(a.pack[l]); for (const e of b.pack[l]) if (A.has(e)) inter++; uni += A.size + b.pack[l].length; }
+  const pa = packOf(a), pb = packOf(b);
+  for (let l = 0; l < L; l++) { const A = new Set(pa[l]); for (const e of pb[l]) if (A.has(e)) inter++; uni += A.size + pb[l].length; }
   return inter / (uni - inter);
 }
 const pct = x => (x >= 0 ? "+" : "") + Math.round(x * 100) + "%";
@@ -342,26 +354,57 @@ const pct = x => (x >= 0 ? "+" : "") + Math.round(x * 100) + "%";
 function readout() {
   const ds = sel.map(i => doms[i]);
   document.getElementById("dName").innerHTML = ds.map(d => `<span style="color:${col(d, 1, 70)}">${d.label}</span>`).join(" + ") || "—";
-  document.getElementById("dSrc").textContent = ds.length > 1 ? `${ds.length} domains in one shared pack, 51 experts per layer` : ds.length ? ds[0].source : "";
+  const B = opts.budget;
+  document.getElementById("dSrc").textContent = ds.length > 1 ? `${ds.length} subjects in one shared pack, ${B} experts per layer` : ds.length ? ds[0].source : "";
+  document.getElementById("tradeLabel").textContent = `Trade-off at ${B} experts per layer`;
+  // memory and experts
+  const wgb = TO.weights_gb && TO.weights_gb[String(B)];
+  document.getElementById("mGpu").textContent = wgb ? pct(wgb / TO.weights_full_gb - 1) : "—";
+  document.getElementById("mGpuTxt").textContent = wgb ? `weights in memory: ${wgb.toFixed(1)} GB instead of ${TO.weights_full_gb.toFixed(1)} GB (Gemma 4 12B: ${TO.weights_12b_gb.toFixed(1)} GB)` : "weights in memory";
+  document.getElementById("mExp").textContent = pct(B / E - 1);
+  document.getElementById("mExpTxt").textContent = `experts kept: ${B} of ${E} per layer`;
+  // blind-judged quality: own pack vs Gemma 4 12B and vs the full 26B
+  const J = (TO.judged || {})[String(B)] || {};
+  const jd = (which) => ds.length === 1 && J[which] && J[which][ds[0].key];
+  const setJ = (id, which, vs) => {
+    const el = document.getElementById(id), tx = document.getElementById(id + "Txt"), r = jd(which), all = J[which] && J[which].all;
+    if (r) {
+      el.textContent = Math.round(r.wt * 100) + "%";
+      el.className = r.wt >= 0.5 ? "gain" : "cost";
+      tx.textContent = `win or tie vs ${vs}, blind-judged (${r.w} wins, ${r.t} ties, ${r.l} losses of ${r.n}; all ten subjects: ${Math.round(all.wt * 100)}%)`;
+    } else {
+      el.textContent = "n/a"; el.className = "";
+      tx.textContent = ds.length > 1 ? `vs ${vs}: judged per subject's own pack, not for shared packs` : `vs ${vs}: judged on the ten Wikipedia subjects only`;
+    }
+  };
+  setJ("m12", "12b", "Gemma 4 12B");
+  setJ("mFull", "full", "the full 26B");
+  const all12 = J["12b"] && J["12b"].all, allFull = J.full && J.full.all;
+  document.getElementById("tradeNote").textContent = B === 64
+    ? `At 64 experts per layer each subject's own pack beats Gemma 4 12B ${all12 ? all12.w + " to " + all12.l : ""} over all 300 questions and leads or ties it in every subject, with 1.1 GB more weights. Against the full 26B it wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}%; most remaining losses are long-tail facts. A machine for one subject needs only the shared core and its pack.`
+    : `At 51 experts per layer, about the 12B's own size, the 12B is the better answerer: it wins ${all12 ? all12.l + " to " + all12.w : ""}. Against the full 26B the pack wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}%. Quality climbs with pack size: 53% at 64, 69% at 80, 77% at 96 per layer.`;
   // routing kept: share of each selected domain's routing on the installed experts, averaged
   const inst = installed(ds);
   let mass = 0;
   for (const d of ds) { let m = 0; for (let l = 0; l < L; l++) for (const e of inst[l]) m += d.share[l][e]; mass += m / 1e4 / L; }
   document.getElementById("mMass").textContent = ds.length ? Math.round((mass / ds.length) * 100) + "%" : "—";
-  document.getElementById("mMassTxt").textContent = ds.length > 1 ? "of these domains' routing lands on installed experts" : "of this domain's routing lands on installed experts";
-  // quality cost
+  document.getElementById("mMassTxt").textContent = ds.length > 1 ? "of these subjects' routing lands on kept experts" : "of this subject's routing lands on kept experts";
+  // loss on held-out text (measured at 51 per layer only)
   const q = document.getElementById("mQual"), qt = document.getElementById("mQualTxt");
-  if (ds.length === 1 && TO.quality[ds[0].key] !== undefined) {
+  if (B !== 51) {
+    q.textContent = "n/a";
+    qt.textContent = "loss on held-out text was measured at 51 per layer; switch to 51 to see it";
+  } else if (ds.length === 1 && TO.quality[ds[0].key] !== undefined) {
     const x = TO.quality[ds[0].key];
     q.textContent = `+${x.toFixed(2)} nats`;
-    qt.textContent = `extra loss per token vs the full model, about ${pct(Math.exp(x) - 1)} perplexity`;
+    qt.textContent = `extra loss per token on held-out text vs the full model, about ${pct(Math.exp(x) - 1)} perplexity`;
   } else if (ds.length > 1 && TO.shared[String(ds.length)] && ds.every(d => TO.quality[d.key] !== undefined)) {
     const s = TO.shared[String(ds.length)];
     q.textContent = `+${s.excess.toFixed(2)} nats`;
-    qt.textContent = `typical for ${ds.length} domains sharing (${Math.round(s.kept * 100)}% of a dedicated pack's gain over random experts)`;
+    qt.textContent = `extra loss, typical for ${ds.length} subjects sharing (${Math.round(s.kept * 100)}% of a dedicated pack's gain over random experts)`;
   } else {
     q.textContent = "n/a";
-    qt.textContent = "not measured on held-out text for this selection (law and regulation have task results in the README)";
+    qt.textContent = "loss not measured on held-out text for this selection";
   }
   // key
   const key = document.getElementById("key");
@@ -451,6 +494,15 @@ function bindToggle(id, get, set, after) {
 bindToggle("tBase", () => opts.base, v => (opts.base = v), () => { redraw(false); drawGrid(); });
 bindToggle("tPref", () => opts.pref, v => (opts.pref = v), () => { redraw(false); drawGrid(); });
 bindToggle("tAnim", () => animOn, v => (animOn = v), () => restartAnim());
+for (const b of DATA.budgets) {
+  const el = document.getElementById("b" + b);
+  if (!el) continue;
+  el.onclick = () => {
+    opts.budget = b;
+    for (const o of DATA.budgets) { const x = document.getElementById("b" + o); if (x) x.setAttribute("aria-pressed", String(o === b)); }
+    redraw(); drawGrid();
+  };
+}
 for (const [id, v] of [["vFull", "full"], ["vPack", "pack"]]) {
   document.getElementById(id).onclick = () => {
     opts.view = v;
