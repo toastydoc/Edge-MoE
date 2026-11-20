@@ -1,0 +1,101 @@
+﻿llama.cpp b12549 speed, 2026-11-19T23:04:10
+### GPU (RTX 5080, -ngl 99) exports\gemma4-26b-geology-64e-Q3_K_M.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 26B.A4B Q3_K - Medium   |   6.85 GiB |    13.81 B | CUDA       |  99 |           pp512 |     9665.44 ± 176.73 |
+| gemma4 26B.A4B Q3_K - Medium   |   6.85 GiB |    13.81 B | CUDA       |  99 |           tg128 |        224.64 ± 0.35 |
+
+build: 8af68d486 (12549)
+### GPU (RTX 5080, -ngl 99) exports\gemma4-12b-Q4_K_M.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 ?B Q4_K - Medium        |   6.86 GiB |    11.91 B | CUDA       |  99 |           pp512 |      5538.73 ± 74.23 |
+| gemma4 ?B Q4_K - Medium        |   6.86 GiB |    11.91 B | CUDA       |  99 |           tg128 |         97.74 ± 0.16 |
+
+build: 8af68d486 (12549)
+### GPU (RTX 5080, -ngl 99) exports\gemma4-26b-geology-64e-Q4_K_M.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 26B.A4B Q4_K - Medium   |   8.56 GiB |    13.81 B | CUDA       |  99 |           pp512 |    10374.42 ± 420.04 |
+| gemma4 26B.A4B Q4_K - Medium   |   8.56 GiB |    13.81 B | CUDA       |  99 |           tg128 |        199.56 ± 1.10 |
+
+build: 8af68d486 (12549)
+### GPU (RTX 5080, -ngl 99) exports\gemma4-12b-Q6_K.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 ?B Q6_K                 |   9.10 GiB |    11.91 B | CUDA       |  99 |           pp512 |      4637.49 ± 36.81 |
+| gemma4 ?B Q6_K                 |   9.10 GiB |    11.91 B | CUDA       |  99 |           tg128 |         77.88 ± 0.04 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-26b-geology-64e-Q3_K_M.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 26B.A4B Q3_K - Medium   |   6.85 GiB |    13.81 B | CPU        |       8 |           pp256 |        151.60 ± 0.72 |
+| gemma4 26B.A4B Q3_K - Medium   |   6.85 GiB |    13.81 B | CPU        |       8 |            tg64 |         20.53 ± 0.33 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-12b-Q4_K_M.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 ?B Q4_K - Medium        |   6.86 GiB |    11.91 B | CPU        |       8 |           pp256 |         92.23 ± 1.75 |
+| gemma4 ?B Q4_K - Medium        |   6.86 GiB |    11.91 B | CPU        |       8 |            tg64 |          6.59 ± 0.03 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-26b-geology-64e-Q4_K_M.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 26B.A4B Q4_K - Medium   |   8.56 GiB |    13.81 B | CPU        |       8 |           pp256 |        127.67 ± 2.02 |
+| gemma4 26B.A4B Q4_K - Medium   |   8.56 GiB |    13.81 B | CPU        |       8 |            tg64 |         17.52 ± 0.19 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-12b-Q6_K.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 ?B Q6_K                 |   9.10 GiB |    11.91 B | CPU        |       8 |           pp256 |        124.39 ± 1.87 |
+| gemma4 ?B Q6_K                 |   9.10 GiB |    11.91 B | CPU        |       8 |            tg64 |          5.03 ± 0.03 |
+
+build: 8af68d486 (12549)
+
+=== ~13 GB, 2026-11-20T01:33:50
+### GPU (RTX 5080, -ngl 99) exports\gemma4-26b-geology-96e-Q4_K_M.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 26B.A4B Q4_K - Medium   |  12.09 GiB |    19.52 B | CUDA       |  99 |           pp512 |    8474.10 ± 1284.44 |
+| gemma4 26B.A4B Q4_K - Medium   |  12.09 GiB |    19.52 B | CUDA       |  99 |           tg128 |        187.12 ± 0.47 |
+
+build: 8af68d486 (12549)
+### GPU (RTX 5080, -ngl 99) exports\gemma4-26b-full-Q3_K_M.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 26B.A4B Q3_K - Medium   |  12.36 GiB |    25.23 B | CUDA       |  99 |           pp512 |     7900.15 ± 869.66 |
+| gemma4 26B.A4B Q3_K - Medium   |  12.36 GiB |    25.23 B | CUDA       |  99 |           tg128 |        222.65 ± 0.77 |
+
+build: 8af68d486 (12549)
+### GPU (RTX 5080, -ngl 99) exports\gemma4-12b-Q8_0.gguf
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gemma4 ?B Q8_0                 |  11.78 GiB |    11.91 B | CUDA       |  99 |           pp512 |      5895.37 ± 76.09 |
+| gemma4 ?B Q8_0                 |  11.78 GiB |    11.91 B | CUDA       |  99 |           tg128 |         61.94 ± 0.11 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-26b-geology-96e-Q4_K_M.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 26B.A4B Q4_K - Medium   |  12.09 GiB |    19.52 B | CPU        |       8 |           pp256 |        121.41 ± 0.90 |
+| gemma4 26B.A4B Q4_K - Medium   |  12.09 GiB |    19.52 B | CPU        |       8 |            tg64 |         17.70 ± 0.04 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-26b-full-Q3_K_M.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 26B.A4B Q3_K - Medium   |  12.36 GiB |    25.23 B | CPU        |       8 |           pp256 |        140.19 ± 3.52 |
+| gemma4 26B.A4B Q3_K - Medium   |  12.36 GiB |    25.23 B | CPU        |       8 |            tg64 |         20.04 ± 0.01 |
+
+build: 8af68d486 (12549)
+### CPU only (Ryzen 7 9700X, 8 threads) exports\gemma4-12b-Q8_0.gguf
+| model                          |       size |     params | backend    | threads |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | ------: | --------------: | -------------------: |
+| gemma4 ?B Q8_0                 |  11.78 GiB |    11.91 B | CPU        |       8 |           pp256 |         33.15 ± 0.18 |
+| gemma4 ?B Q8_0                 |  11.78 GiB |    11.91 B | CPU        |       8 |            tg64 |          3.92 ± 0.01 |
+
+build: 8af68d486 (12549)

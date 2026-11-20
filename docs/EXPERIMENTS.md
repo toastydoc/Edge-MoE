@@ -173,6 +173,41 @@ So for this use case the pack is not a free win at the smallest size, but there 
 
 It loads and runs in stock llama.cpp with no patches and answers in-domain questions coherently. Two notes: the file is larger than the prototype's 7.8 GB because the expert down-projections (704 wide, not a multiple of 256) fall back to a less compact quantisation type, and llama.cpp's tokens per second are 40× the PyTorch prototype's, so the prototype speeds elsewhere in this README compare configurations with each other, not with a real runtime.
 
+### Against Gemma 4 12B, the dense model of about the same size
+
+Same 300 Wikipedia questions, same blind judge (Gemini 3.1 Pro, both orders, a win only when both agree).
+
+**Prototype** (this project's 4-bit PyTorch prototype, round-to-nearest in groups of 32, for both models):
+
+| Head-to-head | Weights in memory | First wins | Ties | Second wins |
+|---|---|---|---|---|
+| Pack, 64 experts per layer vs Gemma 4 12B | 7.8 vs 6.7 GB | **105** | 117 | 78 |
+| Pack, 51 experts per layer vs Gemma 4 12B | ~6.5 vs 6.7 GB | 70 | 92 | **138** |
+| Gemma 4 12B vs the full 26B | 6.7 vs ~14.2 GB | 31 | 112 | **157** |
+
+**Stock llama.cpp b12549, matched on file size.** The prototype's 64-per-layer lead did not survive real quantisation:
+
+| Head-to-head | File sizes | First wins | Ties | Second wins |
+|---|---|---|---|---|
+| Pack 64/layer Q3_K_M vs 12B Q4_K_M | 7.37 vs 7.38 GB | 69 | 117 | **114** |
+| Pack 64/layer Q4_K_M vs 12B Q6_K | 9.21 vs 9.79 GB | 71 | 124 | **105** |
+| Pack 96/layer Q4_K_M vs 12B Q8_0 (7 of 10 subjects, 210 questions) | 13.0 vs 12.67 GB | **83** | 98 | 29 |
+| Full 26B Q3_K_M vs 12B Q8_0 | 13.29 vs 12.67 GB | **112** | 137 | 51 |
+
+Both GGUF files beat their own prototype versions (pack 89–151–60, 12B 112–141–47), the 12B by more: round-to-nearest 4-bit hurt the dense model more than the MoE. So at equal file size from 7 to 10 GB the 12B answers somewhat better. The full 26B at Q2_K (10.58 GB) produced degenerate output on all 300 questions. Generation speed (llama-bench, tokens per second):
+
+| Model | File | RTX 5080 | Ryzen 7 9700X, CPU only |
+|---|---|---|---|
+| Pack 64/layer Q3_K_M | 7.37 GB | 225 | 20.5 |
+| 12B Q4_K_M | 7.38 GB | 98 | 6.6 |
+| Pack 64/layer Q4_K_M | 9.21 GB | 200 | 17.5 |
+| 12B Q6_K | 9.79 GB | 78 | 5.0 |
+| Pack 96/layer Q4_K_M | 13.0 GB | 187 | 17.7 |
+| Full 26B Q3_K_M | 13.29 GB | 223 | 20.0 |
+| 12B Q8_0 | 12.67 GB | 62 | 3.9 |
+
+Scripts: `scripts/run_vs_12b.ps1` (prototype), `scripts/run_llamacpp_vs_12b.ps1` and `scripts/run_llamacpp_bigger.ps1` (llama.cpp, answers via `scripts/gen_llamacpp_answers.py`). Raw speed output: `results/llamacpp_speed.txt`.
+
 ## Caveats
 
 - **Small samples:** 200 questions per domain is about ±3 points. There are 22 reconcile tasks, so each is worth 4.5 points; differences of one or two tasks are noise.

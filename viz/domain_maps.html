@@ -95,7 +95,7 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
     <div class="eyebrow">Gemma 4 26B-A4B · 30 layers × 128 experts · expert packs</div>
     <h1>Where the router sends each domain</h1>
     <p class="proj"><a href="https://github.com/toastydoc/Edge-MoE">Code, data and results on GitHub →</a></p>
-    <p class="lede"><b style="color:var(--ink);font-weight:500">Keep only the experts one subject uses, and Gemma 4 26B beats Gemma 4 12B, the dense model that fits the same mid-range machine.</b> At 64 of 128 experts per layer (7.8 GB of weights) each subject's expert pack wins or ties 74% of blind-judged questions against the 12B, in all ten subjects, and computes about 4B parameters per token against the 12B's 12B.</p>
+    <p class="lede"><b style="color:var(--ink);font-weight:500">Every subject has a routing fingerprint: the router sends its text to a consistent set of experts.</b> Keep the routers, drop the experts a subject never reaches, and Gemma 4 26B becomes a smaller model that still runs in stock llama.cpp: 7.4 GB at 64 of 128 experts per layer, where the full model squeezed to 10.6 GB no longer works.</p>
     <p class="lede">The router sits at the centre. Each ring going outward is one of the 30 layers, holding its 128 experts in numbered slots. Bolts trace the experts a subject's text is routed to, layer by layer: its routing fingerprint. Compare what the full model uses with what a pack keeps, for one subject or up to three sharing one pack.</p>
   </header>
 
@@ -132,7 +132,6 @@ a:focus-visible { outline: 1px solid var(--rim); outline-offset: 2px; }
         <div class="trade">
           <div class="cell"><b class="gain" id="mGpu">—</b><span id="mGpuTxt">weights in memory</span></div>
           <div class="cell"><b class="gain" id="mExp">—</b><span id="mExpTxt">experts kept per layer</span></div>
-          <div class="cell"><b id="m12">—</b><span id="m12Txt">vs Gemma 4 12B</span></div>
           <div class="cell"><b id="mFull">—</b><span id="mFullTxt">vs the full 26B</span></div>
           <div class="cell"><b id="mMass">—</b><span id="mMassTxt">of this subject's routing lands on kept experts</span></div>
           <div class="cell"><b class="cost" id="mQual">—</b><span id="mQualTxt">loss on held-out text</span></div>
@@ -368,10 +367,10 @@ function readout() {
   // memory and experts
   const wgb = TO.weights_gb && TO.weights_gb[String(B)];
   document.getElementById("mGpu").textContent = wgb ? pct(wgb / TO.weights_full_gb - 1) : "—";
-  document.getElementById("mGpuTxt").textContent = wgb ? `weights in memory: ${wgb.toFixed(1)} GB instead of ${TO.weights_full_gb.toFixed(1)} GB (Gemma 4 12B: ${TO.weights_12b_gb.toFixed(1)} GB)` : "weights in memory";
+  document.getElementById("mGpuTxt").textContent = wgb ? `weights in memory: ${wgb.toFixed(1)} GB instead of ${TO.weights_full_gb.toFixed(1)} GB` : "weights in memory";
   document.getElementById("mExp").textContent = pct(B / E - 1);
   document.getElementById("mExpTxt").textContent = `experts kept: ${B} of ${E} per layer`;
-  // blind-judged quality: own pack vs Gemma 4 12B and vs the full 26B
+  // blind-judged quality: own pack vs the full 26B
   const J = (TO.judged || {})[String(B)] || {};
   const jd = (which) => ds.length === 1 && J[which] && J[which][ds[0].key];
   const setJ = (id, which, vs) => {
@@ -385,12 +384,11 @@ function readout() {
       tx.textContent = ds.length > 1 ? `vs ${vs}: judged per subject's own pack, not for shared packs` : `vs ${vs}: judged on the ten Wikipedia subjects only`;
     }
   };
-  setJ("m12", "12b", "Gemma 4 12B");
   setJ("mFull", "full", "the full 26B");
-  const all12 = J["12b"] && J["12b"].all, allFull = J.full && J.full.all;
+  const allFull = J.full && J.full.all;
   document.getElementById("tradeNote").textContent = B === 64
-    ? `At 64 experts per layer each subject's own pack beats Gemma 4 12B ${all12 ? all12.w + " to " + all12.l : ""} over all 300 questions and leads or ties it in every subject, with 1.1 GB more weights. Against the full 26B it wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}%; most remaining losses are long-tail facts. A machine for one subject needs only the shared core and its pack.`
-    : `At 51 experts per layer, about the 12B's own size, the 12B is the better answerer: it wins ${all12 ? all12.l + " to " + all12.w : ""}. Against the full 26B the pack wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}%. Quality climbs with pack size: 53% at 64, 69% at 80, 77% at 96 per layer.`;
+    ? `At 64 experts per layer each subject's own pack wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}% of blind-judged questions against the full 26B; most remaining losses are long-tail facts. A machine for one subject needs only the shared core and its pack.`
+    : `At 51 experts per layer the pack wins or ties ${allFull ? Math.round(allFull.wt * 100) : "—"}% against the full 26B. Quality climbs with pack size: 53% at 64, 69% at 80, 77% at 96 per layer.`;
   // routing kept: share of each selected domain's routing on the installed experts, averaged
   const inst = installed(ds);
   let mass = 0;

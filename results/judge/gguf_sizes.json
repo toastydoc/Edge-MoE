@@ -1,0 +1,56 @@
+{
+ "lcpp_12b_q4km": {
+  "all": 7.381
+ },
+ "lcpp_12b_q6k": {
+  "all": 9.786
+ },
+ "lcpp_pack64_q3km": {
+  "art": 7.369,
+  "history": 7.369,
+  "biology": 7.369,
+  "geology": 7.369,
+  "politics": 7.369,
+  "computer_science": 7.369,
+  "economics": 7.369,
+  "chemistry": 7.369,
+  "physics": 7.369,
+  "philosophy": 7.369
+ },
+ "lcpp_pack64_q4km": {
+  "art": 9.209,
+  "history": 9.209,
+  "biology": 9.209,
+  "geology": 9.209,
+  "politics": 9.209,
+  "computer_science": 9.209,
+  "economics": 9.209,
+  "chemistry": 9.209,
+  "physics": 9.209,
+  "philosophy": 9.209
+ },
+ "lcpp_full_q3km": {
+  "all": 13.287
+ },
+ "lcpp_12b_q8": {
+  "all": 12.67
+ },
+ "lcpp_pack96_q4km": {
+  "art": 13.003,
+  "history": 13.003,
+  "biology": 13.003,
+  "geology": 13.003,
+  "politics": 13.003,
+  "computer_science": 13.003,
+  "economics": 13.003,
+  "chemistry": 13.003,
+  "physics": 13.003,
+  "philosophy": 13.003
+ },
+ "lcpp_full_q2k": {
+  "all": 10.583
+ },
+ "lcpp_full_q3ks": {
+  "all": 12.222
+ }
+}
